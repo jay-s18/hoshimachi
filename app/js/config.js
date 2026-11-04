@@ -75,10 +75,21 @@ export const BORTLE_COLORS = ["#1b1714", "#2e1c16", "#4a221a", "#6e2b1c", "#9840
 /* ---------- base maps (GSI, Geospatial Information Authority of Japan) ---------- */
 export const GSI_ATTR =
   '<a href="https://maps.gsi.go.jp/development/ichiran.html" target="_blank" rel="noopener">地理院タイル</a> (GSI Japan)';
+/**
+ * Base maps, each one or more GSI tile sets shown over a zoom range.
+ * Roads uses the label-free 白地図 (blank) when zoomed out, so place names don't clutter the region squares,
+ * and the labelled 淡色地図 (pale) from ROADS_LABEL_ZOOM in.
+ */
+const ROADS_LABEL_ZOOM = 8;
 export const BASE_TILES = {
-  roads: { url: "https://cyberjapandata.gsi.go.jp/xyz/pale/{z}/{x}/{y}.png", maxNativeZoom: 18 },
-  terrain: { url: "https://cyberjapandata.gsi.go.jp/xyz/hillshademap/{z}/{x}/{y}.png", maxNativeZoom: 16 },
+  roads: [
+    { url: "https://cyberjapandata.gsi.go.jp/xyz/blank/{z}/{x}/{y}.png", minNativeZoom: 5, maxNativeZoom: 14, maxZoom: ROADS_LABEL_ZOOM - 1 },
+    { url: "https://cyberjapandata.gsi.go.jp/xyz/pale/{z}/{x}/{y}.png", maxNativeZoom: 18, minZoom: ROADS_LABEL_ZOOM },
+  ],
+  terrain: [{ url: "https://cyberjapandata.gsi.go.jp/xyz/hillshademap/{z}/{x}/{y}.png", maxNativeZoom: 16 }],
 };
+/** Base map shown once remote tiles are known to load; "plain" (no tiles) is the fallback when they can't. */
+export const DEFAULT_BASE = "roads";
 /** A single tile used to check whether remote tiles can load (some embedded viewers block them). */
 export const TILE_PROBE = "https://cyberjapandata.gsi.go.jp/xyz/pale/5/28/12.png";
 

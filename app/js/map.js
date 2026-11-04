@@ -1,7 +1,7 @@
 /**
  * The Leaflet map: base layers, region squares, raster overlays, legend, selection and pin.
  */
-import { BASE_TILES, BORTLE_COLORS, GSI_ATTR, MONTHS, ODDS_STOPS, SPOTS, TILE_PROBE } from "./config.js";
+import { BASE_TILES, BORTLE_COLORS, DEFAULT_BASE, GSI_ATTR, MONTHS, ODDS_STOPS, SPOTS, TILE_PROBE } from "./config.js";
 import { BOUNDS, CELLS, OVERLAY_URLS, PREFS } from "./data.js";
 import { state, monthOf } from "./state.js";
 import { ib, pct } from "./util.js";
@@ -11,7 +11,8 @@ import { renderPanel } from "./panel.js";
 let map, landFill, ovB, ovT, rects, spotLayer, selR, BASES;
 let selMarker = null,
   pinMarker = null,
-  tilesOK = null; // null = still checking, true/false = remote tiles can / cannot load
+  tilesOK = null, // null = still checking, true/false = remote tiles can / cannot load
+  basePicked = false; // the user chose a base map, so don't switch to the default when tiles turn out to load
 
 export function initMap() {
   map = L.map("map", { zoomControl: true, attributionControl: false, minZoom: 4, maxZoom: 15, zoomSnap: 0.5, preferCanvas: true });
@@ -39,9 +40,13 @@ export function initMap() {
     interactive: false,
   }).addTo(map);
   BASES = Object.fromEntries(
-    Object.entries(BASE_TILES).map(([k, t]) => [
+    Object.entries(BASE_TILES).map(([k, sets]) => [
       k,
-      L.tileLayer(t.url, { maxNativeZoom: t.maxNativeZoom, maxZoom: 18, className: "tiles-" + k, attribution: GSI_ATTR }),
+      L.layerGroup(
+        sets.map(({ url, ...zoom }) =>
+          L.tileLayer(url, { maxZoom: 18, ...zoom, className: "tiles-" + k, attribution: GSI_ATTR }),
+        ),
+      ),
     ]),
   );
   probeTiles();
@@ -102,7 +107,8 @@ function probeTiles() {
   const done = (ok) => {
     if (tilesOK === null) {
       tilesOK = ok;
-      baseUI();
+      if (ok && !basePicked) applyBase(DEFAULT_BASE);
+      else baseUI();
     }
   };
   im.onload = () => done(true);
@@ -182,7 +188,13 @@ export function baseUI() {
   });
 }
 
+/** User choice from the Plain / Roads / Terrain buttons. */
 export function setBase(v) {
+  basePicked = true;
+  applyBase(v);
+}
+
+function applyBase(v) {
   Object.values(BASES).forEach((t) => map.hasLayer(t) && map.removeLayer(t));
   state.base = v;
   if (v !== "plain") BASES[v].addTo(map);
