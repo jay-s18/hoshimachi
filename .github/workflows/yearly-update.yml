@@ -1,0 +1,108 @@
+# Adds the previous calendar year of cloud data (and refreshes night lights), rebuilds and re-validates
+# everything, and opens a pull request only if the refreshed model passes the validation gate.
+# Setup (once): see docs/YEARLY_UPDATE.md.
+name: Yearly data update
+
+on:
+  schedule:
+    # 15 April, 03:00 UTC: ERA5 in Earth Engine lags real time by about three months.
+    - cron: "0 3 15 4 *"
+  workflow_dispatch:
+    inputs:
+      year:
+        description: "Year to add (default: last calendar year)"
+        required: false
+      refresh_viirs:
+        description: "Also refresh the VIIRS night-light composite"
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: yearly-update
+  cancel-in-progress: false
+
+env:
+  BUCKET: ${{ vars.HOSHIMACHI_BUCKET }}
+  GCP_PROJECT: ${{ vars.HOSHIMACHI_GCP_PROJECT }}
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Year to add
+        id: year
+        env:
+          INPUT_YEAR: ${{ inputs.year }}
+        run: |
+          y="${INPUT_YEAR:-$(( $(date -u +%Y) - 1 ))}"
+          [[ "$y" =~ ^[0-9]{4}$ ]] || { echo "::error::year must be four digits, got '$y'"; exit 1; }
+          echo "year=$y" >> "$GITHUB_OUTPUT"
+
+      - uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GEE_SERVICE_ACCOUNT_KEY }}
+      - uses: google-github-actions/setup-gcloud@v2
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: pipeline/pyproject.toml
+      - run: pip install -e "pipeline[earthengine,dev]"
+
+      - name: Export the new year from Earth Engine
+        run: >
+          python pipeline/earthengine/export.py
+          --project "$GCP_PROJECT" --bucket "$BUCKET" --years "${{ steps.year.outputs.year }}"
+          ${{ (github.event_name == 'schedule' || inputs.refresh_viirs) && '--viirs' || '' }}
+
+      - name: Fetch all raw inputs
+        run: gcloud storage cp "gs://$BUCKET/hoshimachi/raw/*" pipeline/data/raw/
+
+      - name: Describe inputs
+        working-directory: pipeline
+        run: hoshimachi info
+
+      - name: Build, validate and publish app/data
+        id: build
+        working-directory: pipeline
+        run: hoshimachi build
+
+      - name: Validation report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: validation-report
+          path: pipeline/build/validation_report.json
+          if-no-files-found: ignore
+
+      - name: Data integrity
+        working-directory: pipeline
+        run: hoshimachi check
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci && npx playwright install --with-deps chromium
+      - name: Browser smoke test on the new data
+        run: npm test
+
+      - name: Summarise for the pull request
+        run: python pipeline/scripts/summarise_update.py app/data/manifest.json > "$RUNNER_TEMP/pr-body.md"
+
+      - uses: peter-evans/create-pull-request@v7
+        with:
+          branch: data/update-${{ steps.year.outputs.year }}
+          commit-message: "data: add ${{ steps.year.outputs.year }} and re-validate"
+          title: "Data update: add ${{ steps.year.outputs.year }}"
+          body-path: ${{ runner.temp }}/pr-body.md
+          add-paths: app/data/
+          labels: data-update

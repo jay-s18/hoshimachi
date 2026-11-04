@@ -1,0 +1,298 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Hoshimachi 星待ち: stargazing trip planner for Japan</title>
+    <meta
+      name="description"
+      content="Odds of a clear, dark night anywhere in Japan, for any dates: sky darkness, cloud history and the moon in one place."
+    />
+    <meta name="theme-color" content="#0b0b0d" />
+    <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Shippori+Mincho+B1:wght@500;700&amp;family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Sans+JP:wght@400;500&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="vendor/leaflet/leaflet.css" />
+    <link rel="stylesheet" href="css/app.css" />
+    <!-- Third-party libraries are vendored (pinned versions, no CDN dependency): Leaflet 1.9.4, SunCalc 1.9.0 -->
+    <script src="vendor/leaflet/leaflet.js" defer></script>
+    <script src="vendor/suncalc/suncalc.js" defer></script>
+    <script type="module" src="js/main.js"></script>
+  </head>
+  <body>
+    <div id="boot" class="boot" role="status" aria-live="polite">Loading data…</div>
+    <header>
+      <div class="brand" title="Hoshimachi: odds of a clear, dark night anywhere in Japan">
+        <svg class="logo" width="34" height="34" viewBox="0 0 34 34" aria-hidden="true">
+          <defs>
+            <clipPath id="lc"><circle cx="17" cy="17" r="15.2" /></clipPath>
+          </defs>
+          <circle cx="17" cy="17" r="15.2" fill="#131316" stroke="#e4ddcf" stroke-width="1.1" />
+          <g clip-path="url(#lc)"><path d="M0 27.5 L8.5 19.5 L12.5 23 L19.5 15.5 L26.5 22.5 L34 18 L34 34 L0 34 Z" fill="#e4ddcf" /></g>
+          <path d="M22.5 5.2 L23.4 9.1 L27.3 10 L23.4 10.9 L22.5 14.8 L21.6 10.9 L17.7 10 L21.6 9.1 Z" fill="#d4a656" /></svg
+        ><span class="kanji">星待ち</span>
+      </div>
+      <div class="tag"></div>
+      <button class="hbtn" id="aboutBtn" type="button">How it works</button>
+      <button class="hbtn" id="redBtn" type="button" aria-pressed="false">Red light mode</button>
+    </header>
+    <main>
+      <aside aria-label="Trip settings">
+        <div class="grp">
+          <div class="lblrow">
+            <label for="origin" class="lbl">Starting from</label
+            ><button
+              type="button"
+              class="ib"
+              aria-label="About: Starting from"
+              data-tip="Regions are filtered by straight-line distance from this city to each region&#x27;s darkest spot. Real travel is longer, and islands need a ferry or flight. Choose ‘Anywhere in Japan’ to see everything."
+            >
+              i
+            </button>
+          </div>
+          <select id="origin"></select>
+          <div class="row">
+            <input type="range" id="dist" min="100" max="1500" step="50" value="400" aria-label="Maximum distance" /><span
+              class="num"
+              id="distOut"
+              style="min-width: 64px; text-align: right"
+              >400 km</span
+            >
+          </div>
+        </div>
+        <div class="grp">
+          <div class="lblrow">
+            <span class="lbl">Trip dates</span
+            ><button
+              type="button"
+              class="ib"
+              aria-label="About: Trip dates"
+              data-tip="Pick the day you arrive and the day you leave. Every night in between counts, like a hotel booking: arrive Nov 8 and leave Nov 10 means the nights of Nov 8 and Nov 9."
+            >
+              i
+            </button>
+          </div>
+          <div class="row">
+            <div class="field"><label for="dFrom" class="hint">Arrive</label><input type="date" id="dFrom" min="2015-01-01" /></div>
+            <div class="field"><label for="dTo" class="hint">Leave</label><input type="date" id="dTo" min="2015-01-02" /></div>
+          </div>
+          <div class="hint" id="nightsOut"></div>
+        </div>
+        <div class="grp">
+          <div class="lblrow">
+            <span class="lbl">Moon each night</span
+            ><button
+              type="button"
+              class="ib"
+              aria-label="About: Moon each night"
+              data-tip="The share of the moon that is lit, and how many dark hours it costs on that night in central Japan. Hours with the moon above the horizon and more than 25% lit don&#x27;t count towards a good night. Each region card shows that region&#x27;s own hours."
+            >
+              i
+            </button>
+          </div>
+          <div class="moonline" id="moonline"></div>
+        </div>
+        <div class="grp">
+          <div class="lblrow">
+            <span class="lbl">Shooting</span
+            ><button
+              type="button"
+              class="ib"
+              aria-label="About: Shooting"
+              data-tip="Any dark sky: counts hours with the sun 18° below the horizon and the moon down or under 25% lit. Milky Way core: also needs the galactic core 10° above the horizon, roughly February to October in Japan. The core is only up for a few hours, so lower the hours needed to 1–2."
+            >
+              i
+            </button>
+          </div>
+          <div class="seg" id="target">
+            <button type="button" data-v="sky" class="on">Any dark sky</button><button type="button" data-v="mw">Milky Way core</button>
+          </div>
+        </div>
+        <div class="grp">
+          <div class="lblrow">
+            <span class="lbl">Darkest spot at least</span
+            ><button
+              type="button"
+              class="ib"
+              aria-label="About: Bortle limit"
+              data-tip="The Bortle scale runs from 1 (pristine sky) to 9 (inner city). Regions whose darkest ~1 km spot is brighter than your limit are hidden. Bortle 4 or darker shows the Milky Way clearly. Values are estimates and may be off by one class."
+            >
+              i
+            </button>
+          </div>
+          <div class="seg" id="bortle">
+            <button type="button" data-v="1">Bortle 1</button><button type="button" data-v="2">2</button
+            ><button type="button" data-v="3">3</button><button type="button" data-v="4" class="on">4</button
+            ><button type="button" data-v="5">5</button>
+          </div>
+        </div>
+        <div class="grp">
+          <div class="lblrow">
+            <span class="lbl">A good night needs</span
+            ><button
+              type="button"
+              class="ib"
+              aria-label="About: Good night"
+              data-tip="How many clear, dark hours a night needs to count as good. Clear means under 25% cloud in that hour. ‘In a row’ needs one unbroken window. ‘Passing clouds OK’ adds up clear hours with gaps, which suits places like Yaeyama where clouds drift through."
+            >
+              i
+            </button>
+          </div>
+          <div class="row">
+            <input type="range" id="hours" min="1" max="10" step="1" value="3" aria-label="Clear hours needed" /><span
+              class="num"
+              id="hoursOut"
+              style="min-width: 72px; text-align: right"
+              >3 hours</span
+            >
+          </div>
+          <div class="seg" id="rule">
+            <button type="button" data-v="run" class="on">In a row</button><button type="button" data-v="any">Passing clouds OK</button>
+          </div>
+        </div>
+        <div class="grp">
+          <div class="lblrow">
+            <span class="lbl">On the map</span
+            ><button
+              type="button"
+              class="ib"
+              aria-label="About: Map markers"
+              data-tip="Gold stars are certified International Dark Sky Places. White stars are spots the author has shot from. Grey dots are well-known stargazing spots. Positions are approximate."
+            >
+              i
+            </button>
+          </div>
+          <label class="row" style="font-size: 13px"><input type="checkbox" id="showSpots" checked /> Certified and well-known spots</label>
+        </div>
+      </aside>
+
+      <div class="mapwrap">
+        <div id="map" role="application" aria-label="Map of Japan"></div>
+        <div class="seg layers" id="layer">
+          <button type="button" data-v="trip" class="on">Trip odds</button><button type="button" data-v="month">Month odds</button
+          ><button type="button" data-v="dark">Darkness</button><button type="button" data-v="trend">Light trend</button>
+        </div>
+        <div class="basebox">
+          <div class="seg" id="baseSeg">
+            <button type="button" data-v="plain" class="on">Plain</button><button type="button" data-v="roads">Roads</button
+            ><button type="button" data-v="terrain">Terrain</button>
+          </div>
+        </div>
+        <div class="legend" id="legend"></div>
+      </div>
+
+      <section class="res" aria-label="Results" id="res"></section>
+    </main>
+
+    <div id="tip" role="status" aria-live="polite"></div>
+    <dialog id="about">
+      <div class="about">
+        <button class="x" type="button" id="aboutClose">Close</button>
+        <h2>How Hoshimachi works</h2>
+        <p class="jp" style="margin-top: 0">星待ち, waiting for the stars</p>
+        <p>
+          Darkness maps tell you where the sky is dark, and forecasts cover the next few days. Neither tells you, weeks ahead, how likely a
+          trip is to get you a usable night. Hoshimachi estimates that base rate by replaying <span data-bind="yearsCount">ten</span> years
+          of real weather through the exact darkness and moon hours of your dates.
+        </p>
+
+        <h3>What counts as a good night</h3>
+        <ol>
+          <li>
+            <b>Dark site.</b> The region's darkest ~1 km spot meets your Bortle limit. Sky brightness is modelled from VIIRS satellite night
+            lights spread over 150 km with Walker's law (glow ∝ distance<sup>−2.5</sup>), converted to zenith mag/arcsec² and then to a
+            Bortle class.
+          </li>
+          <li>
+            <b>Dark, moon-free hours.</b> Sun at least 18° below the horizon, and the moon either below the horizon or under 25% lit. In
+            Milky Way mode the galactic core must also be 10° up. These are calculated exactly for your dates and the region's darkest spot.
+          </li>
+          <li>
+            <b>Clear sky.</b> At least the chosen number of hours with total cloud under 25% inside those hours, in a row or with gaps if
+            you allow passing clouds.
+          </li>
+        </ol>
+
+        <h3>How the odds are estimated</h3>
+        <ul>
+          <li>
+            <b>A base rate, not a forecast.</b> A clear night on your dates in a past year says nothing about this year. What carries over
+            is the season: rainy season, the winter monsoon on the Sea of Japan side, clear Pacific-side winters. So the tool pools every
+            past year and a ±<span data-bind="windowDays">30</span>-day window around your dates (up to
+            <span data-bind="maxTrips">610</span> past trips) and counts how often at least one night worked. Replaying real sequences keeps
+            the fact that bad weather comes in multi-day systems.
+          </li>
+          <li>
+            <b>Shrinkage.</b> Each region is blended <span data-bind="blendRatio">75/25</span> with the average of its neighbouring ~28 km
+            cells. Small samples exaggerate extremes. Blending pulls them back and made the odds better calibrated in testing.
+          </li>
+          <li>
+            <b>Uncertainty.</b> The range shown is a 95% interval from how much the odds vary between years (about ±10 points typically).
+            Neighbouring days in one year share weather, so the past trips are not independent samples. Regions whose ranges overlap the top
+            result are effectively tied.
+          </li>
+          <li>
+            <b>No peeking.</b> If your dates fall inside <span data-bind="period">2015–2024</span>, that year is left out of the odds and
+            shown separately as what actually happened.
+          </li>
+        </ul>
+
+        <h3>How well it works</h3>
+        <!-- Filled from data/manifest.json ("validation" and "stats"), so it stays correct after each yearly data update. -->
+        <div id="validation-summary"><p class="hint">Validation results load with the data.</p></div>
+
+        <h3>Reading the colours</h3>
+        <p>
+          Warm colours always mean artificial light: on the darkness and light-trend layers and the light-dome compass, brighter and warmer
+          means more light pollution. Cool blue-to-mint always means clear-sky odds, brighter meaning better. Every scale gets lighter as
+          its value rises, so it still reads in greyscale and for colour-blind viewers (Crameri et al., <i>Nature Communications</i>, 2020).
+          The interface stays dim and warm because night vision is most sensitive to blue-green light. Red light mode goes further for use
+          in the field.
+        </p>
+
+        <h3>Limitations</h3>
+        <ul>
+          <li>
+            <b>Not a forecast.</b> The odds know nothing about this particular season (El Niño, a late rainy season). Within a week of your
+            trip, use a live forecast.
+          </li>
+          <li>
+            <b><span data-bind="yearsCount">10</span> years is short.</b> Rare patterns may be missing, and a changing climate could shift
+            cloudiness later.
+          </li>
+          <li>
+            <b>Clouds.</b> ERA5 reanalysis gives one value per ~28 km cell per hour. Valley fog, sea fog, mountain-top cloud and fast-moving
+            cumulus are smoothed out. Thin high cloud counts as cloud. The 25% threshold is fixed. "Passing clouds OK" mode was not
+            separately validated.
+          </li>
+          <li>
+            <b>Darkness.</b> Calibrated to one published ground reading (Yonago, 18.8 mag/arcsec²). Terrain shielding, altitude and natural
+            airglow are ignored, and Bortle is really a visual scale, so labels may be off by one class. The satellite under-sees white
+            LEDs, so darkness may be overstated near LED-lit towns and the light-trend layer understates brightening.
+          </li>
+          <li><b>Light domes.</b> Direction and strength come from the same distance model, without hills that may hide a town.</li>
+          <li><b>Moon.</b> The 25%-lit cut-off is a simplification. A low crescent and a high quarter moon are treated alike.</li>
+          <li><b>Months view.</b> Uses mid-month darkness hours for the whole month and ignores the moon.</li>
+          <li>
+            <b>Places.</b> The darkest spot is a satellite pixel, not a surveyed or accessible site. Distances are straight lines; islands
+            need ferries or flights. English place names are auto-romanised (Japanese names are authoritative) and spot markers are
+            approximate.
+          </li>
+        </ul>
+
+        <h3>Data</h3>
+        <ul>
+          <li>Cloud: ECMWF ERA5 hourly total cloud cover, <span data-bind="period">2015–2024</span>, via Google Earth Engine.</li>
+          <li>Night lights: VIIRS Day/Night Band annual composites v2.1/v2.2, Earth Observation Group, Colorado School of Mines.</li>
+          <li>Boundaries: MLIT 国土数値情報, simplified by SmartNews Media Research Institute.</li>
+          <li>Sun and moon: SunCalc. Map: Leaflet.</li>
+        </ul>
+        <p class="hint">A Waseda Business School project. Historical odds, not forecasts. Check a live forecast before you drive.</p>
+      </div>
+    </dialog>
+  </body>
+</html>

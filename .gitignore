@@ -1,0 +1,21 @@
+# Dependencies and tool output
+node_modules/
+dist/
+test-results/
+playwright-report/
+__pycache__/
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.venv/
+
+# Pipeline inputs and intermediates (inputs live in Cloud Storage; see docs/YEARLY_UPDATE.md)
+pipeline/data/raw/*
+!pipeline/data/raw/README.md
+pipeline/build/
+
+# app/data/ IS committed: it is the published dataset the site serves.
+
+.DS_Store
+.env
+*.key.json

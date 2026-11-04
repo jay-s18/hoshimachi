@@ -1,0 +1,26 @@
+{
+  "name": "hoshimachi",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Stargazing trip planner for Japan: the odds of a clear, dark night anywhere, any date.",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node tools/serve.mjs app 8000",
+    "lint": "eslint . && prettier --check .",
+    "format": "prettier --write . && eslint --fix .",
+    "test": "playwright test",
+    "build:single": "node tools/build-single-file.mjs",
+    "check": "npm run lint && npm test"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@playwright/test": "1.63.0",
+    "esbuild": "^0.28.2",
+    "eslint": "^10.14.0",
+    "globals": "^17.14.0",
+    "prettier": "^3.9.10"
+  }
+}

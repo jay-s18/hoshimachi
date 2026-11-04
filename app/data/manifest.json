@@ -1,0 +1,232 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-04T16:14:23+00:00",
+  "pipelineVersion": "1.0.0",
+  "period": {
+    "firstNight": "2015-01-01",
+    "lastNight": "2024-12-31",
+    "nights": 3653,
+    "years": [
+      2015,
+      2016,
+      2017,
+      2018,
+      2019,
+      2020,
+      2021,
+      2022,
+      2023,
+      2024
+    ]
+  },
+  "night": {
+    "hours": 12,
+    "firstHourLocal": 18,
+    "utcOffsetHours": 9,
+    "clearCloudBelow": 0.25
+  },
+  "model": {
+    "windowDays": 30,
+    "neighbourWeight": 0.25
+  },
+  "lightTrend": {
+    "firstYear": 2014,
+    "lastYear": null
+  },
+  "calibration": {
+    "anchor": "Yonago Kosen rooftop",
+    "anchorSqm": 18.8,
+    "g0": 2.150673291261194
+  },
+  "overlayBounds": [
+    [
+      23.875,
+      122.375
+    ],
+    [
+      46.125,
+      146.375
+    ]
+  ],
+  "pixelGrid": {
+    "west": 122.375,
+    "north": 46.125,
+    "step": 0.008333333333333333,
+    "rows": 2670,
+    "cols": 2880,
+    "sqmOffset": 15.0,
+    "sqmScale": 20.0,
+    "radianceMax": 500.0,
+    "radianceLevels": 254
+  },
+  "validation": {
+    "tuneYears": [
+      2021,
+      2022
+    ],
+    "testYears": [
+      2023,
+      2024
+    ],
+    "predictionsPerTripLength": 724626,
+    "step": 1,
+    "gatePassed": true,
+    "results": [
+      {
+        "nights": 1,
+        "predictions": 726614,
+        "maxCalibrationGap": 0.04301940404745874,
+        "skill": {
+          "regionAllYear": {
+            "value": 0.06806205319408731,
+            "lo": 0.05148130843639084,
+            "hi": 0.08435223331825435
+          },
+          "nationalMonth": {
+            "value": 0.07935756570791985,
+            "lo": 0.0598343708613201,
+            "hi": 0.09870750795393342
+          },
+          "regionMonth": {
+            "value": 0.00659723493541875,
+            "lo": 0.0016468173487588695,
+            "hi": 0.011589381131786166
+          }
+        }
+      },
+      {
+        "nights": 3,
+        "predictions": 724626,
+        "maxCalibrationGap": 0.05737134899580054,
+        "skill": {
+          "regionAllYear": {
+            "value": 0.11798305841269396,
+            "lo": 0.09057157112942905,
+            "hi": 0.14421068322573988
+          },
+          "nationalMonth": {
+            "value": 0.12212845871808964,
+            "lo": 0.09330376745721358,
+            "hi": 0.15019781309933283
+          },
+          "regionMonth": {
+            "value": 0.013892630437689069,
+            "lo": 0.005035437371126064,
+            "hi": 0.022240439936127145
+          }
+        }
+      },
+      {
+        "nights": 5,
+        "predictions": 722638,
+        "maxCalibrationGap": 0.06205971233579877,
+        "skill": {
+          "regionAllYear": {
+            "value": 0.14335965670556272,
+            "lo": 0.10765443363495202,
+            "hi": 0.1768795011286771
+          },
+          "nationalMonth": {
+            "value": 0.13981323349377417,
+            "lo": 0.10941592813517315,
+            "hi": 0.17071216057696884
+          },
+          "regionMonth": {
+            "value": 0.017091819202904923,
+            "lo": 0.00658336584101864,
+            "hi": 0.027842330214506866
+          }
+        }
+      }
+    ]
+  },
+  "stats": {
+    "darknessCloudCorrelation": -0.391,
+    "clearNightShareHalves": [
+      {
+        "years": [
+          2015,
+          2016,
+          2017,
+          2018,
+          2019
+        ],
+        "share": 0.2811
+      },
+      {
+        "years": [
+          2020,
+          2021,
+          2022,
+          2023,
+          2024
+        ],
+        "share": 0.2842
+      }
+    ],
+    "goodNightShareByMonth": [
+      0.3035,
+      0.3055,
+      0.3537,
+      0.3367,
+      0.2684,
+      0.1403,
+      0.1587,
+      0.2377,
+      0.2461,
+      0.3663,
+      0.3556,
+      0.3199
+    ]
+  },
+  "files": {
+    "cells": {
+      "path": "cells.json",
+      "bytes": 401776,
+      "sha256": "7a77ca9b3ac86b0f926800f82a68bea659c1f7a3a8c5010e4cd084de14a5bb51",
+      "description": "Region metadata, one object per 0.25° land cell"
+    },
+    "prefectures": {
+      "path": "prefectures.geojson",
+      "bytes": 138940,
+      "sha256": "3221c2d1623a0f35bc113c1b11fad43fd1b9acb9aaefe7279c5d340fc0b5ab9a",
+      "description": "Prefecture outlines"
+    },
+    "lightSources": {
+      "path": "light-sources.json",
+      "bytes": 83642,
+      "sha256": "fd7803f4536bd5614dbf13960e233b4888960657effb0078f9b6ac6a8d45061a",
+      "description": "Named light sources: [lat, lon, name, total radiance]"
+    },
+    "nightMasks": {
+      "path": "night-masks.u16.gz",
+      "bytes": 1763737,
+      "sha256": "23e2c4f2afbd6093b631a8aa2ae7f3e817b176d85a7fa9c11a410cb48ce9af90",
+      "description": "uint16 little-endian, nights × cells, gzip"
+    },
+    "skyBrightness": {
+      "path": "sky-brightness.u8.gz",
+      "bytes": 336245,
+      "sha256": "b3f5cc1cbe7a2bc82de58fd8aeac34ce5d6d6cc999a8b7a3712b743e83a81a65",
+      "description": "uint8 SQM code per pixel, rows × cols, gzip"
+    },
+    "radiance": {
+      "path": "radiance.u8.gz",
+      "bytes": 640558,
+      "sha256": "9fb7fec6c83d824141fa82463a391ba87d0d82f2777d8f2466b85bcd99112e71",
+      "description": "uint8 log radiance code per pixel, rows × cols, gzip"
+    },
+    "bortleOverlay": {
+      "path": "bortle.png",
+      "bytes": 140885,
+      "sha256": "494204a1a1e832d2626acc384bff1f67e93c622d3b428764d59f2369897b9150",
+      "description": "Bortle class overlay, Web Mercator rows"
+    },
+    "trendOverlay": {
+      "path": "trend.png",
+      "bytes": 251299,
+      "sha256": "b17248b4333b1c1447fa98b0ea5c82403b60db65b243c0f93ec2cea646c4b3d6",
+      "description": "Light-trend overlay, Web Mercator rows"
+    }
+  }
+}

@@ -1,0 +1,100 @@
+# Hoshimachi data pipeline settings.
+#
+# Every number that shapes the published data lives here, so a change of method is a reviewed
+# one-line diff rather than an edit buried in code. Paths are relative to this file.
+#
+# Nothing here mentions specific years: the period covered is read from the input files, and the
+# validation years roll forward with it (see [validation]). Adding a year of data needs no edits.
+
+[paths]
+raw_dir = "data/raw"                       # inputs (git-ignored; see data/raw/README.md)
+era5_glob = "era5_nights_*.tif"            # one or more nightly cloud-mask exports, any split by year
+viirs = "viirs_japan_30s.tif"              # band 1 = latest annual radiance, band 2 = trend slope per year
+viirs_meta = "viirs_japan_30s.json"        # optional sidecar written by the Earth Engine export: {"firstYear", "lastYear"}
+municipalities = "muni_s0010.json"         # municipality polygons (land mask, names)
+prefectures = "prefs_s0001.json"           # prefecture polygons (map outlines)
+build_dir = "build"                        # intermediate files and the validation report (git-ignored)
+app_data_dir = "../app/data"               # where the web app reads its data
+
+[grid]
+# ERA5 cells are 0.25°, aligned to the export's outer edges. The pixel grid is 30 arc-seconds (1/120°).
+west = 122.375
+north = 46.125
+cell_deg = 0.25
+pixels_per_cell = 30
+
+[night]
+# How the nightly masks were made (fixed at export time, recorded here for reference and the manifest).
+hours = 12                     # bit k of a mask = hour (first_hour_local + k)
+first_hour_local = 18          # 18:00 JST
+utc_offset_hours = 9
+clear_cloud_below = 0.25       # ERA5 total cloud cover fraction
+# What counts as a good night in validation (the app's defaults).
+sun_altitude_max = -18.0       # astronomical darkness
+min_clear_hours = 3
+rule = "run"                   # "run" = in a row, "any" = passing clouds allowed
+
+[skyglow]
+radius_km = 150.0              # light sources farther than this are ignored
+exponent = 2.5                 # Walker's law: glow ∝ distance^-exponent
+radiance_clip = 500.0          # nW/cm²/sr; clips gas flares and sensor artefacts
+# Latitude bands for the convolution: [north edge, south edge, latitude used for the kernel's km-per-degree]
+bands = [[46.2, 39.0, 42.5], [39.0, 31.0, 35.0], [31.0, 23.8, 27.5]]
+
+[calibration]
+# Zenith brightness: SQM = natural - 2.5 log10(1 + G / G0), with G0 fixed by one measured anchor.
+natural_sqm = 22.0
+anchor_name = "Yonago Kosen rooftop"
+anchor_lon = 133.30
+anchor_lat = 35.45
+anchor_sqm = 18.8
+anchor_pixels = 1              # half-width of the averaging window around the anchor (1 = 3x3 pixels)
+
+[bortle]
+# Lower SQM edge of Bortle classes 1..8 (darker than the edge = that class or better); below the last = 9.
+edges = [21.99, 21.89, 21.69, 20.49, 19.50, 18.94, 18.38, 17.80]
+# Bortle class 4 or darker counts as "dark" for a cell's dark-area share.
+dark_class_sqm = 20.49
+
+[cells]
+dome_min_km = 2.0              # light domes ignore sources closer than this
+towns_listed = 8               # municipalities listed per region
+trend_min_radiance = 5.0       # below this total radiance the light trend is reported as "unmeasurable"
+
+[overlays]
+mercator_rows = 2200           # output height of the map overlays (Web Mercator rows)
+trend_min_radiance = 0.3       # pixels darker than this show no trend
+trend_stable = 0.01            # |slope / radiance| per year below this = stable
+trend_fast = 0.03              # above this = brightening fast
+
+[grids]
+# Pixel grids for spot readings in the browser, one byte per pixel.
+sqm_offset = 15.0              # code = (sqm - offset) * scale, 255 = sea
+sqm_scale = 20.0
+sqm_code_max = 140
+radiance_max = 500.0           # code = log1p(rad) / log1p(max) * levels
+radiance_levels = 254
+light_source_min_radiance = 5.0
+
+[names]
+# Romanisations pykakasi gets wrong.
+fixes = { "井原" = "Ibara", "神津島" = "Kozushima", "洞爺湖" = "Toyako" }
+
+[validation]
+# Rolling protocol: the last `test_years` full years are the test set, the `tune_years` before them
+# choose the settings, and everything earlier is training data.
+test_years = 2
+tune_years = 2
+trip_lengths = [1, 3, 5]
+window_grid = [0, 7, 15, 30]   # ± days around the calendar date
+blend_grid = [0.0, 0.25, 0.5, 0.75]   # weight on the mean of adjacent cells
+reliability_bins = 10
+min_bin_count = 2000
+bootstrap_reps = 1000
+bootstrap_seed = 20261104
+
+[validation.gate]
+# A data update is only published if the refreshed model still passes these checks on its test years.
+max_calibration_gap = 0.08     # largest |predicted - observed| over reliability bins, as a fraction
+min_skill_ci_low = 0.0         # lower 95% bound of skill must exceed this ...
+skill_references = ["national_month", "region_all_year"]   # ... against each of these baselines
