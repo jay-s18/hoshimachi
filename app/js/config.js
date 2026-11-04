@@ -83,7 +83,12 @@ export const GSI_ATTR =
 const ROADS_LABEL_ZOOM = 8;
 export const BASE_TILES = {
   roads: [
-    { url: "https://cyberjapandata.gsi.go.jp/xyz/blank/{z}/{x}/{y}.png", minNativeZoom: 5, maxNativeZoom: 14, maxZoom: ROADS_LABEL_ZOOM - 1 },
+    {
+      url: "https://cyberjapandata.gsi.go.jp/xyz/blank/{z}/{x}/{y}.png",
+      minNativeZoom: 5,
+      maxNativeZoom: 14,
+      maxZoom: ROADS_LABEL_ZOOM - 1,
+    },
     { url: "https://cyberjapandata.gsi.go.jp/xyz/pale/{z}/{x}/{y}.png", maxNativeZoom: 18, minZoom: ROADS_LABEL_ZOOM },
   ],
   terrain: [{ url: "https://cyberjapandata.gsi.go.jp/xyz/hillshademap/{z}/{x}/{y}.png", maxNativeZoom: 16 }],

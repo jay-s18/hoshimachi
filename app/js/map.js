@@ -43,9 +43,7 @@ export function initMap() {
     Object.entries(BASE_TILES).map(([k, sets]) => [
       k,
       L.layerGroup(
-        sets.map(({ url, ...zoom }) =>
-          L.tileLayer(url, { maxZoom: 18, ...zoom, className: "tiles-" + k, attribution: GSI_ATTR }),
-        ),
+        sets.map(({ url, ...zoom }) => L.tileLayer(url, { maxZoom: 18, ...zoom, className: "tiles-" + k, attribution: GSI_ATTR })),
       ),
     ]),
   );
