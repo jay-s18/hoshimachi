@@ -6,7 +6,6 @@ build-backend = "setuptools.build_meta"
 name = "hoshimachi-pipeline"
 version = "1.0.0"
 description = "Builds and validates the data behind the Hoshimachi stargazing trip planner."
-readme = "../README.md"
 requires-python = ">=3.11"
 dependencies = [
   "numpy>=1.26",
