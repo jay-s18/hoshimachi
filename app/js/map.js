@@ -80,9 +80,20 @@ export function initMap() {
       L.marker([s[3], s[4]], {
         icon: L.divIcon({ className: "", html: `<div class="mk ${s[0]}">${s[0] === "known" ? "●" : "✦"}</div>`, iconSize: [14, 14] }),
         keyboard: false,
-      }).bindTooltip(`<b>${s[1]}</b> <span class="jp">${s[2]}</span><br><span class="hint">${s[5]}</span>`),
+      })
+        .bindTooltip(`<b>${s[1]}</b> <span class="jp">${s[2]}</span><br><span class="hint">${s[5]}</span>`)
+        // Markers swallow clicks, so the region square underneath never sees them: select it here instead.
+        .on("click", () => {
+          const i = cellAt(s[3], s[4]);
+          if (i >= 0) select(i, [s[3], s[4]]);
+        }),
     ),
   ).addTo(map);
+}
+
+/** Index of the 0.25° cloud cell containing [lat, lon], or -1 if none (e.g. open sea). */
+function cellAt(lat, lon) {
+  return CELLS.findIndex((c) => Math.abs(lat - c.lat) <= 0.125 && Math.abs(lon - c.lon) <= 0.125);
 }
 
 /** Check once whether remote base-map tiles can load here; disable the Roads/Terrain buttons if not. */
