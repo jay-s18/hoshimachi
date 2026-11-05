@@ -5,7 +5,8 @@ import { loadData, manifest, CELLS, YEARS, MODEL, periodLabel } from "./data.js"
 import { state } from "./state.js";
 import { esc, isoAdd } from "./util.js";
 import { nextNewMoon } from "./astro.js";
-import { initMap } from "./map.js";
+import { centerOn, initMap, select } from "./map.js";
+import { readLink } from "./link.js";
 import { initControls } from "./controls.js";
 import { recompute } from "./app.js";
 
@@ -95,9 +96,14 @@ async function main() {
     state.date = nextNewMoon();
     state.dateTo = isoAdd(state.date, DEFAULT_NIGHTS);
     state.nights = DEFAULT_NIGHTS;
+    const shared = readLink(); // settings from a shared link override the defaults above
     initMap();
     initControls();
     recompute();
+    if (shared.sel !== null) {
+      select(shared.sel, shared.pin);
+      centerOn(state.pin);
+    }
     document.getElementById("boot").hidden = true;
   } catch (err) {
     showBootError(err);

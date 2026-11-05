@@ -1,7 +1,7 @@
 /**
  * The results panel: the ranked list of regions, and the detail card for a selected region.
  */
-import { BORTLE_COLORS, MONTHS, ORIGINS } from "./config.js";
+import { BORTLE_COLORS, FORECAST, MONTHS, ORIGINS } from "./config.js";
 import { CELLS, YEARS, manifest, periodLabel } from "./data.js";
 import { state, ymd, monthOf } from "./state.js";
 import { addDays, daysFromToday, esc, fmtDate, ib, pct } from "./util.js";
@@ -10,6 +10,9 @@ import { monthSeries } from "./odds.js";
 import { drawPanorama, horizonProfile, spotInfo } from "./sky.js";
 import { results, distOf } from "./app.js";
 import { clearSelection, select } from "./map.js";
+import { cachedPlace, lookupPlace } from "./place.js";
+import { forecastStatus, tripInRange } from "./forecast.js";
+import { writeLink } from "./link.js";
 
 const rangeTxt = (r) => `${pct(r.lo)}–${pct(r.hi)}`;
 
@@ -25,10 +28,16 @@ function notices() {
     dt = daysFromToday(d),
     lastYear = YEARS[YEARS.length - 1],
     out = [];
-  if (dt >= 0 && dt <= 7)
-    out.push(
-      `Your trip starts ${dt === 0 ? "today" : `in ${dt} day${dt > 1 ? "s" : ""}`}. A live forecast now beats these historical odds: use them to shortlist regions, then check the forecast for the one you pick.`,
-    );
+  if (tripInRange(d, state.nights)) {
+    const st = forecastStatus();
+    if (st === "ready")
+      out.push(
+        `<b>Live forecast included.</b> Nights in the next ${FORECAST.days} days blend today's Japan Meteorological Agency cloud forecast with the historical odds, trusting the forecast more the closer the night. The blend is a rough rule, not validated like the history.`,
+      );
+    else if (st === "error")
+      out.push("The live cloud forecast couldn't load, so these are historical odds only. Check a forecast before you go.");
+    else out.push("Loading the live cloud forecast for your trip…");
+  }
   if (dt < 0 && d[0] > lastYear) out.push("These dates have passed. The odds show what history suggested beforehand.");
   if (state.excl && state.excl.size)
     out.push(
@@ -49,6 +58,7 @@ function searchScore(c, q) {
 
 export function renderPanel() {
   const el = document.getElementById("res");
+  writeLink();
   if (state.sel != null) return renderCard(el, state.sel);
   const d = ymd(),
     end = addDays(d, state.nights - 1);
@@ -64,7 +74,8 @@ export function renderPanel() {
   const noWin = passing.every((r) => !r.anyWin);
   const top = list[0];
   // Divider below the regions whose range overlaps #1's: those are statistically tied with it.
-  const cut = top && state.sort !== "dark" && !q ? list.findIndex((r) => r.hi < top.lo) : -1;
+  // The ranges are historical, so the divider is skipped once a forecast has moved the odds.
+  const cut = top && state.sort !== "dark" && !q && !top.fc ? list.findIndex((r) => r.hi < top.lo) : -1;
   const seen = new Set();
   const rows = list
     .slice(0, 40)
@@ -82,7 +93,7 @@ export function renderPanel() {
       return (
         divider +
         `<li data-i="${r.i}" class="${state.sel === r.i ? "sel" : ""}"><span class="rk num">${k + 1}</span><span><span class="nm">${esc(c.en)}</span> <span class="jp">${esc(c.jp)}</span>${near ? ` <span class="hint">near ${esc(near)}</span>` : ""}</span><span class="odds">${pct(r.p)}</span>
-      <span class="sub"><span>${esc(c.pref)}</span>${bChip(c.sqm)}${dd != null ? `<span class="num">${Math.round(dd)} km</span>` : ""}<span class="num rng">range ${rangeTxt(r)}</span></span></li>`
+      <span class="sub"><span>${esc(c.pref)}</span>${bChip(c.sqm)}${dd != null ? `<span class="num">${Math.round(dd)} km</span>` : ""}${r.fc ? `<span class="num rng">history ${pct(r.pHist)}</span>` : `<span class="num rng">range ${rangeTxt(r)}</span>`}</span></li>`
       );
     })
     .join("");
@@ -158,6 +169,14 @@ function trendText(c) {
   return `Satellite-measured light in this region: <b class="num" style="color:${col}">${c.trend > 0 ? "+" : ""}${c.trend}% per decade</b>`;
 }
 
+/** The pinned spot's place name: undefined = still looking up, null = not found. */
+function placeHtml(place) {
+  const icon = `<svg width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5z" fill="currentColor"/></svg>`;
+  if (place === undefined) return `${icon}<span class="hint">Finding the place name…</span>`;
+  if (!place) return `${icon}<span class="hint">Place name unavailable here</span>`;
+  return `${icon}<span><b>${esc(place.local || place.area)}</b>${place.local && place.area ? ` <span class="area">· ${esc(place.area)}</span>` : ""}</span>`;
+}
+
 function renderCard(el, i) {
   const c = CELLS[i],
     r = results[i];
@@ -170,10 +189,11 @@ function renderCard(el, i) {
   el.innerHTML = `<div class="card">
     <button class="back" type="button" id="backBtn">← All regions</button>
     <div><h3>${esc(c.en)}</h3><div class="jp">${esc(c.jp)} · ${esc(c.pref)} <span class="jp">${esc(c.prefjp)}</span></div></div>
+    <div class="place" id="placeName" aria-live="polite">${placeHtml(sp.sqm === null ? null : cachedPlace(sp.lat, sp.lon))}</div>
     ${notices()}
     ${r.ok ? "" : `<div class="note">This region doesn't pass your current darkness or distance filter.</div>`}
     <div class="tiles">
-      <div class="tile"><div class="v" style="color:var(--odds)">${pct(r.p)}</div><div class="k">trip odds, at least one good night<br><span class="num">range ${rangeTxt(r)}</span></div></div>
+      <div class="tile"><div class="v" style="color:var(--odds)">${pct(r.p)}</div><div class="k">${r.fc ? `trip odds with live forecast<br><span class="num">history alone ${pct(r.pHist)}</span>` : `trip odds, at least one good night<br><span class="num">range ${rangeTxt(r)}</span>`}</div></div>
       <div class="tile"><div class="v">${bortleOf(c.sqm)}</div><div class="k">Bortle at darkest spot <span class="num">(est. ${c.sqm.toFixed(1)} mag/arcsec²)</span></div></div>
       <div class="tile"><div class="v">${dd != null ? Math.round(dd) : "–"}</div><div class="k">${dd != null ? `km from ${origin}, straight line` : "km: pick a starting city"}</div></div>
     </div>
@@ -193,11 +213,16 @@ function renderCard(el, i) {
       <canvas id="pano" class="pano" role="img" aria-label="Simulated horizon glow around the pin"></canvas>
       <div class="hint" id="panoTxt" style="margin-top:6px"></div></div>
     <div class="sect"><h4>Night by night${ib(`Usable hours have the sun 18° below the horizon and the moon down or under 25% lit${state.target === "mw" ? ", with the galactic core 10° up" : ""}. Odds per night differ by a few points mostly through noise.`, "Night by night")}</h4>
-      <table class="nights"><tr><th>Night of</th><th>Moon</th><th>Usable hours</th><th style="text-align:right">Odds</th></tr>
+      <table class="nights"><tr><th>Night of</th><th>Moon</th><th>Usable hours</th>${r.fc ? "<th>Forecast</th>" : ""}<th style="text-align:right">Odds</th></tr>
       ${r.dates
         .map((dt, j) => {
-          const m = moonInfo(dt);
-          return `<tr><td>${fmtDate(dt)}</td><td><span title="${moonName(m.f, m.waxing)}, ${Math.round(m.f * 100)}% lit">${moonIcon(m.f, m.waxing)} <span class="num">${Math.round(m.f * 100)}%</span></span></td><td class="num">${hoursLabel(r.wins[j])}</td><td class="num" style="text-align:right">${r.wins[j] ? pct(r.nightP[j]) : "–"}</td></tr>`;
+          const m = moonInfo(dt),
+            f = r.fc?.[j];
+          const fcCell = !r.fc
+            ? ""
+            : `<td class="num">${f ? `<span class="${f.good ? "fc-good" : "fc-bad"}" title="Forecast clear hours in the usable window; trusted ${Math.round(f.w * 100)}% for this night">${f.good ? "clear" : "cloudy"} ${f.clearH} h</span>` : `<span class="hint">beyond ${FORECAST.days} days</span>`}</td>`;
+          const odds = f ? f.p : r.nightP[j];
+          return `<tr><td>${fmtDate(dt)}</td><td><span title="${moonName(m.f, m.waxing)}, ${Math.round(m.f * 100)}% lit">${moonIcon(m.f, m.waxing)} <span class="num">${Math.round(m.f * 100)}%</span></span></td><td class="num">${hoursLabel(r.wins[j])}</td>${fcCell}<td class="num" style="text-align:right">${r.wins[j] ? pct(odds) : "–"}</td></tr>`;
         })
         .join("")}
       </table>
@@ -231,6 +256,15 @@ function renderCard(el, i) {
   };
   const tb = document.getElementById("toBest");
   if (tb) tb.onclick = () => select(i);
+
+  if (sp.sqm !== null && cachedPlace(sp.lat, sp.lon) === undefined) {
+    const [plat, plon] = state.pin;
+    const samePin = () => state.pin && state.pin[0] === plat && state.pin[1] === plon;
+    lookupPlace(sp.lat, sp.lon, samePin).then((place) => {
+      const box = document.getElementById("placeName");
+      if (box && samePin()) box.innerHTML = placeHtml(place);
+    });
+  }
 
   const cv = document.getElementById("pano");
   const pr = drawPanorama(cv, horizonProfile(sp.lat, sp.lon));

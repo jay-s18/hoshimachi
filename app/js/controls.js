@@ -16,6 +16,7 @@ const MOON_REF = [36.0, 138.0];
 /** Wire a segmented button group #id to state[key]. */
 function seg(id, key, cast = String) {
   const buttons = document.querySelectorAll(`#${id} button`);
+  buttons.forEach((b) => b.classList.toggle("on", b.dataset.v === String(state[key]))); // may come from a shared link
   buttons.forEach((b) =>
     b.addEventListener("click", () => {
       buttons.forEach((x) => x.classList.toggle("on", x === b));
@@ -87,7 +88,10 @@ export function initControls() {
     di = document.getElementById("dist"),
     dout = document.getElementById("distOut");
   o.innerHTML = ORIGINS.map((x) => `<option value="${x[0]}">${x[1]}</option>`).join("");
+  // Controls start from state, which a shared link may have set.
   o.value = state.origin;
+  di.value = state.dist;
+  dout.textContent = state.dist + " km";
   di.disabled = state.origin === "any";
   o.onchange = () => {
     state.origin = o.value;
@@ -113,17 +117,31 @@ export function initControls() {
 
   const hr = document.getElementById("hours"),
     hout = document.getElementById("hoursOut");
+  const hoursText = () => (hout.textContent = state.hours + (state.hours === 1 ? " hour" : " hours"));
+  hr.value = state.hours;
+  hoursText();
   hr.oninput = () => {
     state.hours = +hr.value;
-    hout.textContent = hr.value + (hr.value === "1" ? " hour" : " hours");
+    hoursText();
     schedule();
   };
 
   initDates();
 
+  document.getElementById("showSpots").checked = state.spots;
   document.getElementById("showSpots").onchange = (e) => {
     state.spots = e.target.checked;
     paint();
+  };
+  const sb = document.getElementById("shareBtn");
+  sb.onclick = async () => {
+    try {
+      await navigator.clipboard.writeText(location.href);
+      sb.textContent = "Link copied";
+    } catch {
+      sb.textContent = "Copy the address bar";
+    }
+    setTimeout(() => (sb.textContent = "Share"), 2000);
   };
   const ab = document.getElementById("about");
   document.getElementById("aboutBtn").onclick = () => ab.showModal();

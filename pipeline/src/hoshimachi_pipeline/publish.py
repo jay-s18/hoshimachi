@@ -26,7 +26,7 @@ FILES = {
     "nightMasks": ("night-masks.u16.gz", "uint16 little-endian, nights × cells, gzip"),
     "skyBrightness": ("sky-brightness.u8.gz", "uint8 SQM code per pixel, rows × cols, gzip"),
     "radiance": ("radiance.u8.gz", "uint8 log radiance code per pixel, rows × cols, gzip"),
-    "bortleOverlay": ("bortle.png", "Bortle class overlay, Web Mercator rows"),
+    "bortleOverlay": ("bortle.png", "Sky brightness overlay on the Bortle colour ramp, Web Mercator rows"),
     "trendOverlay": ("trend.png", "Light-trend overlay, Web Mercator rows"),
 }
 

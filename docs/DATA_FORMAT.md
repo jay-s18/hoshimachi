@@ -49,16 +49,16 @@ The app appends the first 12 hex digits of each file's `sha256` as `?v=` when fe
 
 ## Files
 
-| Key             | File                   | Format                                                                                                                                              |
-| --------------- | ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `cells`         | `cells.json`           | Array of region objects, below. Order defines the cell index everywhere else.                                                                       |
-| `prefectures`   | `prefectures.geojson`  | FeatureCollection of prefecture outlines, coordinates rounded to 0.001°.                                                                            |
-| `lightSources`  | `light-sources.json`   | `[lat, lon, "English (日本語)", totalRadiance]`, brightest first.                                                                                   |
-| `nightMasks`    | `night-masks.u16.gz`   | gzip of uint16 little-endian, `nights × cells`, row-major (night-major). Bit _k_ set = hour `firstHourLocal + k` had cloud below `clearCloudBelow`. |
-| `skyBrightness` | `sky-brightness.u8.gz` | gzip of uint8 `rows × cols`. SQM = `sqmOffset + code / sqmScale`; 255 = sea.                                                                        |
-| `radiance`      | `radiance.u8.gz`       | gzip of uint8 `rows × cols`. Radiance = `expm1(code / radianceLevels × log1p(radianceMax))` nW/cm²/sr.                                              |
-| `bortleOverlay` | `bortle.png`           | RGBA, rows resampled to Web Mercator, spans `overlayBounds`.                                                                                        |
-| `trendOverlay`  | `trend.png`            | Same geometry.                                                                                                                                      |
+| Key             | File                   | Format                                                                                                                                                            |
+| --------------- | ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `cells`         | `cells.json`           | Array of region objects, below. Order defines the cell index everywhere else.                                                                                     |
+| `prefectures`   | `prefectures.geojson`  | FeatureCollection of prefecture outlines, coordinates rounded to 0.001°.                                                                                          |
+| `lightSources`  | `light-sources.json`   | `[lat, lon, "English (日本語)", totalRadiance]`, brightest first.                                                                                                 |
+| `nightMasks`    | `night-masks.u16.gz`   | gzip of uint16 little-endian, `nights × cells`, row-major (night-major). Bit _k_ set = hour `firstHourLocal + k` had cloud below `clearCloudBelow`.               |
+| `skyBrightness` | `sky-brightness.u8.gz` | gzip of uint8 `rows × cols`. SQM = `sqmOffset + code / sqmScale`; 255 = sea.                                                                                      |
+| `radiance`      | `radiance.u8.gz`       | gzip of uint8 `rows × cols`. Radiance = `expm1(code / radianceLevels × log1p(radianceMax))` nW/cm²/sr.                                                            |
+| `bortleOverlay` | `bortle.png`           | RGBA, rows resampled to Web Mercator, spans `overlayBounds`. Sky brightness on a continuous ramp: each Bortle colour sits at the middle of its class's SQM range. |
+| `trendOverlay`  | `trend.png`            | Same geometry.                                                                                                                                                    |
 
 Pixel row _r_, column _c_ covers latitude `north − (r + ½)·step`, longitude `west + (c + ½)·step`.
 

@@ -37,6 +37,9 @@
         ><span class="kanji">星待ち</span>
       </div>
       <div class="tag"></div>
+      <button class="hbtn" id="shareBtn" type="button" title="Copy a link to this exact view: dates, settings and pinned spot">
+        Share
+      </button>
       <button class="hbtn" id="aboutBtn" type="button">How it works</button>
       <button class="hbtn" id="redBtn" type="button" aria-pressed="false">Red light mode</button>
     </header>
@@ -290,8 +293,19 @@
           <li>Night lights: VIIRS Day/Night Band annual composites v2.1/v2.2, Earth Observation Group, Colorado School of Mines.</li>
           <li>Boundaries: MLIT 国土数値情報, simplified by SmartNews Media Research Institute.</li>
           <li>Sun and moon: SunCalc. Map: Leaflet.</li>
+          <li>
+            Live cloud forecast (trips within a week): Japan Meteorological Agency models via
+            <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a> (CC BY 4.0).
+          </li>
+          <li>
+            Place names for the pin: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>
+            contributors (Nominatim) and GSI reverse geocoder (国土地理院).
+          </li>
         </ul>
-        <p class="hint">A Waseda Business School project. Historical odds, not forecasts. Check a live forecast before you drive.</p>
+        <p class="hint">
+          A Waseda Business School project. Odds are historical; for trips within a week they also blend in the live forecast. Check the
+          forecast again before you drive.
+        </p>
       </div>
     </dialog>
   </body>

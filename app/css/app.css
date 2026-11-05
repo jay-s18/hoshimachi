@@ -276,6 +276,28 @@ input[type="range"] {
 .moonchip.bad {
   border-color: #5a4422;
 }
+.place {
+  display: flex;
+  gap: 6px;
+  align-items: flex-start;
+  margin: 8px 0 2px;
+  font-size: 14px;
+  color: var(--ink);
+}
+.place svg {
+  flex: none;
+  margin-top: 3px;
+  color: var(--star);
+}
+.place .area {
+  color: var(--dim);
+}
+.fc-good {
+  color: var(--good);
+}
+.fc-bad {
+  color: var(--bad);
+}
 .note {
   border: 1px solid #4a3f2c;
   background: #1a1712;
@@ -399,7 +421,10 @@ ol.list li.divider:hover {
   filter: brightness(0.5) contrast(1.25) sepia(0.15);
 }
 .leaflet-image-layer {
-  image-rendering: pixelated;
+  image-rendering: pixelated; /* light trend: categories, keep each ~1 km pixel crisp */
+}
+.leaflet-image-layer.ov-smooth {
+  image-rendering: auto; /* darkness: a continuous ramp, so let the browser blend pixels into a gradient */
 }
 .leaflet-control-attribution {
   background: rgba(16, 16, 19, 0.85) !important;

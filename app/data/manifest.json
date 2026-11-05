@@ -218,9 +218,9 @@
     },
     "bortleOverlay": {
       "path": "bortle.png",
-      "bytes": 140885,
-      "sha256": "494204a1a1e832d2626acc384bff1f67e93c622d3b428764d59f2369897b9150",
-      "description": "Bortle class overlay, Web Mercator rows"
+      "bytes": 289618,
+      "sha256": "23044f6501ce6a5dffac8e126eed9301484c7f70bbfc15e6b91960f43be4a2c5",
+      "description": "Sky brightness overlay on the Bortle colour ramp, Web Mercator rows"
     },
     "trendOverlay": {
       "path": "trend.png",

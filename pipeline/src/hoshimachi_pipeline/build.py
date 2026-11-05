@@ -16,7 +16,7 @@ from .config import Config
 from .grids import light_sources, radiance_codes, sqm_codes
 from .names import Namer
 from .publish import publish
-from .sky import bortle, calibrate, skyglow
+from .sky import calibrate, skyglow
 from .stats import summary_stats
 from .validation.run import good_night_matrix, validate
 
@@ -133,7 +133,7 @@ def run_build(cfg: Config, *, step: int = 1, force: bool = False, skip_validatio
         "nightMasks": masks.astype("<u2").tobytes(),
         "skyBrightness": sqm_codes(cfg, sqm, land).tobytes(),
         "radiance": radiance_codes(cfg, lights.radiance).tobytes(),
-        "bortleOverlay": overlays.bortle_png(cfg, bortle(cfg, sqm), land, rows),
+        "bortleOverlay": overlays.bortle_png(cfg, sqm, land, rows),
         "trendOverlay": overlays.trend_png(cfg, lights.radiance, lights.slope, land, rows),
     }
     manifest = publish(cfg.paths.app_data_dir, payloads, manifest_fields)

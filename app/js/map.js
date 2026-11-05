@@ -7,6 +7,7 @@ import { state, monthOf } from "./state.js";
 import { ib, pct } from "./util.js";
 import { results } from "./app.js";
 import { renderPanel } from "./panel.js";
+import { writeLink } from "./link.js";
 
 let map, landFill, ovB, ovT, rects, spotLayer, selR, BASES;
 let selMarker = null,
@@ -52,7 +53,7 @@ export function initMap() {
   applyBase(startBase); // show Roads straight away; probeTiles() falls back to Plain only if tiles can't load
   probeTiles();
 
-  ovB = L.imageOverlay(OVERLAY_URLS.bortle, BOUNDS, { opacity: 0.95, interactive: false, pane: "rasters" });
+  ovB = L.imageOverlay(OVERLAY_URLS.bortle, BOUNDS, { opacity: 0.95, interactive: false, pane: "rasters", className: "ov-smooth" });
   ovT = L.imageOverlay(OVERLAY_URLS.trend, BOUNDS, { opacity: 0.95, interactive: false, pane: "rasters" });
   L.geoJSON(PREFS, {
     pane: "lines",
@@ -148,6 +149,7 @@ export function paint() {
   });
   spotLayer[state.spots ? "addTo" : "remove"](map);
   legend();
+  writeLink();
 }
 
 function applyOpacity() {
@@ -199,6 +201,12 @@ function applyBase(v) {
   if (v !== "plain") BASES[v].addTo(map);
   landFill.setStyle({ fillOpacity: v === "plain" ? 1 : 0 });
   baseUI();
+  writeLink();
+}
+
+/** Centre the map on [lat, lon], zooming in to at least `zoom` (used when a shared link opens a spot). */
+export function centerOn(latlon, zoom = 9) {
+  map.setView(latlon, Math.max(map.getZoom(), zoom));
 }
 
 function legend() {

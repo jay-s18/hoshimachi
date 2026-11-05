@@ -6,6 +6,7 @@ import { CELLS } from "./data.js";
 import { state, ymd, monthOf } from "./state.js";
 import { hav } from "./util.js";
 import { blendAll, excludedYears, monthBlend, monthRaw, tripRaw } from "./odds.js";
+import { applyForecast, ensureForecast, tripInRange } from "./forecast.js";
 import { paint } from "./map.js";
 import { renderPanel } from "./panel.js";
 import { moonLine } from "./controls.js";
@@ -41,6 +42,13 @@ export function recompute() {
     k = state.nights,
     excl = excludedYears(d, k);
   const blended = blendAll(CELLS.map((_, i) => tripRaw(i, d, k, opt, excl)));
+  // Trips starting within a week also use the live cloud forecast; it loads in the background and
+  // triggers another recompute when it arrives.
+  const live = tripInRange(d, k);
+  if (live) {
+    ensureForecast(schedule);
+    blended.forEach((r, i) => applyForecast(r, i));
+  }
   // Month odds are only needed for the month layer; skip them otherwise (they are the slow part).
   const mvals = state.layer === "month" ? CELLS.map((_, i) => monthRaw(i, monthOf(), opt)) : null;
   results = CELLS.map((c, i) => Object.assign(blended[i], { ok: filtersPass(c), i, m: mvals ? monthBlend(mvals, i) : undefined }));

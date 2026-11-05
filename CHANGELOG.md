@@ -2,6 +2,22 @@
 
 All notable changes to this project. Data releases are listed with the period they cover.
 
+## [Unreleased]
+
+### App
+
+- Live cloud forecast: for trips starting within 7 days, nights in range blend the Japan Meteorological Agency forecast (via Open-Meteo) with the historical odds. The trust rule is hand-set and labelled as not validated.
+- Shareable links: dates, settings and the pinned spot are kept in the URL; a Share button copies it.
+- The pinned spot shows its place name (local district plus municipality, county and prefecture) from GSI and OpenStreetMap.
+- Spot markers select their region and pin the exact spot.
+- Roads is the default base map, without labels until zoom 8; Plain is the fallback when tiles can't load.
+- The darkness layer is a smooth gradient instead of 1 km blocks in nine flat colours.
+
+### Pipeline
+
+- `bortle.png` is coloured on a continuous ramp from the published SQM codes (palette PNG).
+- Tests run on Windows (forward-slash paths in the test config).
+
 ## [1.0.0] - 2026-11-05
 
 First structured release, from the single-file prototype.

@@ -8,6 +8,7 @@ import numpy as np
 from PIL import Image
 
 from .config import Config
+from .grids import sqm_codes
 
 # Warm "glow" ramp, Bortle 1 (darkest) .. 9 (city); must match BORTLE_COLORS in app/js/config.js.
 BORTLE_COLORS = ["#1b1714", "#2e1c16", "#4a221a", "#6e2b1c", "#98401e", "#c0621f", "#dd8d2e", "#eebd62", "#f8eccb"]
@@ -40,12 +41,35 @@ def _png(rgba: np.ndarray) -> bytes:
     return buf.getvalue()
 
 
-def bortle_png(cfg: Config, classes: np.ndarray, land: np.ndarray, rows: np.ndarray) -> bytes:
-    img = np.zeros((*classes.shape, 4), np.uint8)
-    for k, colour in enumerate(BORTLE_COLORS, 1):
-        img[classes == k] = (*_hex(colour), 255)
-    img[~land] = 0
-    return _png(img[rows])
+def bortle_ramp_sqm(edges: list[float]) -> np.ndarray:
+    """SQM at the middle of each Bortle class, darkest first: where each BORTLE_COLORS entry sits on the ramp.
+
+    Classes 1 and 9 are open-ended, so their middles are placed half the neighbouring class's width beyond the edge.
+    """
+    e = np.asarray(edges, float)
+    inner = (e[:-1] + e[1:]) / 2
+    return np.concatenate([[e[0] + (e[0] - e[1]) / 2], inner, [e[-1] - (e[-2] - e[-1]) / 2]])
+
+
+def bortle_png(cfg: Config, sqm: np.ndarray, land: np.ndarray, rows: np.ndarray) -> bytes:
+    """Sky brightness on a continuous colour ramp, so the map shades smoothly instead of stepping between classes.
+
+    Each class's colour sits at the middle of its SQM range, so a class edge is drawn halfway between two colours.
+    Pixels are coloured from the same SQM codes the app reads (sky-brightness.u8), so the map and the pin panel agree,
+    and with at most 255 codes the image is a small palette PNG; code 255 (sea) is transparent.
+    """
+    g = cfg.grids
+    codes = sqm_codes(cfg, sqm, land)
+    xs = bortle_ramp_sqm(cfg.bortle.edges)[::-1]  # ascending SQM for np.interp
+    cols = np.array([_hex(c) for c in BORTLE_COLORS], float)[::-1]
+    level_sqm = g.sqm_offset + np.arange(256) / g.sqm_scale
+    palette = np.stack([np.interp(level_sqm, xs, cols[:, ch]) for ch in range(3)], axis=1).round().astype(np.uint8)
+    out = np.ascontiguousarray(codes[rows])
+    img = Image.frombytes("P", (out.shape[1], out.shape[0]), out.tobytes())
+    img.putpalette(palette.ravel().tolist())
+    buf = io.BytesIO()
+    img.save(buf, format="PNG", optimize=True, transparency=255)
+    return buf.getvalue()
 
 
 def trend_png(cfg: Config, radiance: np.ndarray, slope: np.ndarray, land: np.ndarray, rows: np.ndarray) -> bytes:

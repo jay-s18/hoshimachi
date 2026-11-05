@@ -39,6 +39,34 @@ test("loads, ranks regions and opens a card", async ({ page }) => {
   expect(errors).toEqual([]);
 });
 
+test("a shared link restores dates, settings and the pinned spot", async ({ page }) => {
+  const errors = [];
+  page.on("pageerror", (e) => errors.push(e.message));
+  const cells = await (await page.request.get("/data/cells.json")).json();
+  const c = cells[Math.floor(cells.length / 2)];
+  const pin = `${c.bl[1].toFixed(4)},${c.bl[0].toFixed(4)}`;
+  // Far-future dates, so the live forecast is not involved.
+  await page.goto(`/?d=2030-03-02&to=2030-03-05&b=3&h=5&l=dark&cell=${c.r}_${c.c}&pin=${pin}`);
+  await expect(page.locator("#boot")).toBeHidden({ timeout: 30_000 });
+
+  await expect(page.locator("#res .card h3")).toHaveText(c.en);
+  await expect(page.locator("#dFrom")).toHaveValue("2030-03-02");
+  await expect(page.locator("#dTo")).toHaveValue("2030-03-05");
+  await expect(page.locator("#bortle button.on")).toHaveText("3");
+  await expect(page.locator("#layer button.on")).toHaveAttribute("data-v", "dark");
+  await expect(page.locator("#hoursOut")).toHaveText("5 hours");
+  await expect(page.locator("#res .bortle-read")).toContainText(pin.replace(",", ", "));
+
+  // The address bar keeps the view, and changes to it are written back.
+  await expect(page).toHaveURL(new RegExp(`cell=${c.r}_${c.c}&pin=${pin}`));
+  await page.locator("#backBtn").click();
+  await page.locator('#bortle button[data-v="2"]').click();
+  await expect.poll(() => page.evaluate("location.search")).toContain("b=2");
+  expect(await page.evaluate("location.search")).not.toContain("cell=");
+
+  expect(errors).toEqual([]);
+});
+
 test("single-file build runs from disk", async ({ page }) => {
   const file = new URL("../dist/hoshimachi.html", import.meta.url);
   test.skip(!existsSync(file), "run `npm run build:single` first");

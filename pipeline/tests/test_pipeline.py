@@ -2,16 +2,19 @@
 
 import gzip
 import json
+from io import BytesIO
 from pathlib import Path
 
 import numpy as np
 import pytest
 import rasterio
+from PIL import Image
 from rasterio.transform import from_origin
 
 from hoshimachi_pipeline.config import load_config
 from hoshimachi_pipeline.grids import radiance_codes, sqm_codes
 from hoshimachi_pipeline.inputs import InputError, load_clouds
+from hoshimachi_pipeline.overlays import BORTLE_COLORS, _hex, bortle_png, bortle_ramp_sqm
 from hoshimachi_pipeline.publish import FILES, check, publish
 from hoshimachi_pipeline.sky import bortle
 
@@ -22,9 +25,9 @@ CONFIG = Path(__file__).resolve().parents[1] / "config.toml"
 def cfg(tmp_path):
     """The real config, with raw/build/app paths redirected into tmp_path."""
     text = CONFIG.read_text()
-    text = text.replace('raw_dir = "data/raw"', f'raw_dir = "{tmp_path / "raw"}"')
-    text = text.replace('build_dir = "build"', f'build_dir = "{tmp_path / "build"}"')
-    text = text.replace('app_data_dir = "../app/data"', f'app_data_dir = "{tmp_path / "app_data"}"')
+    text = text.replace('raw_dir = "data/raw"', f'raw_dir = "{(tmp_path / "raw").as_posix()}"')
+    text = text.replace('build_dir = "build"', f'build_dir = "{(tmp_path / "build").as_posix()}"')
+    text = text.replace('app_data_dir = "../app/data"', f'app_data_dir = "{(tmp_path / "app_data").as_posix()}"')
     p = tmp_path / "config.toml"
     p.write_text(text)
     (tmp_path / "raw").mkdir()
@@ -74,6 +77,22 @@ def test_clouds_reject_gaps_and_partial_years(cfg):
     write_masks(cfg, "era5_nights_2020.tif", days(2020)[:-1])
     with pytest.raises(InputError, match="whole years"):
         load_clouds(cfg)
+
+
+def test_bortle_overlay_is_a_smooth_ramp(cfg):
+    mids = bortle_ramp_sqm(cfg.bortle.edges)
+    assert len(mids) == len(BORTLE_COLORS) and np.all(np.diff(mids) < 0)
+    c4, c5 = (np.array(_hex(BORTLE_COLORS[k])) for k in (3, 4))
+    sweep = np.linspace(17.0, 22.0, 101)
+    # One row: class 4 middle, class 5 middle, halfway between them, a fine sweep, then a sea pixel.
+    sqm = np.array([[mids[3], mids[4], (mids[3] + mids[4]) / 2, *sweep, 21.0]])
+    land = np.ones_like(sqm, bool)
+    land[0, -1] = False
+    img = np.array(Image.open(BytesIO(bortle_png(cfg, sqm, land, np.array([0])))).convert("RGBA")).astype(int)[0]
+    assert np.all(np.abs(img[0, :3] - c4) <= 3) and np.all(np.abs(img[1, :3] - c5) <= 3)
+    assert np.all(np.abs(img[2, :3] - (c4 + c5) / 2) <= 4)  # blended between classes, not snapped to one
+    assert len({tuple(px) for px in img[3:-1, :3]}) > 3 * len(BORTLE_COLORS)  # a gradient, not 9 flat colours
+    assert np.all(img[:-1, 3] == 255) and img[-1, 3] == 0  # land opaque, sea transparent
 
 
 def test_bortle_edges(cfg):

@@ -111,3 +111,31 @@ export const PANO = {
   naturalSky: 0.75, // natural sky brightness in model units
   reference: [35.69, 139.7], // Shinjuku: the brightest reference used to normalise the picture
 };
+
+/* ---------- live services (looked up in the browser; the app still works without them) ---------- */
+/**
+ * Place names for the pin. Nominatim (OpenStreetMap) gives the English municipality, county and prefecture;
+ * GSI's reverse geocoder gives the local district (大字・町名), which OpenStreetMap often lacks.
+ * Nominatim's usage policy allows at most one request a second, so lookups are throttled and cached.
+ */
+export const PLACE_API = {
+  nominatim: "https://nominatim.openstreetmap.org/reverse",
+  gsi: "https://mreversegeocoder.gsi.go.jp/reverse-geocoder/LonLatToAddress",
+  minIntervalMs: 1100,
+};
+
+/**
+ * Live cloud forecast, blended into the odds for trip nights within `days` of today.
+ * JMA's models via Open-Meteo (free, no key). One forecast point per 2×2 block of regions keeps a page load
+ * to about 300 locations, inside Open-Meteo's free per-minute limit.
+ * Trust in the forecast for a night `lead` days ahead = max(0, trust0 − trustDrop × lead). This is a rough rule
+ * chosen by hand, not validated like the historical odds; the UI says so.
+ */
+export const FORECAST = {
+  url: "https://api.open-meteo.com/v1/forecast",
+  model: "jma_seamless",
+  days: 7,
+  batch: 100, // locations per request
+  trust0: 0.85,
+  trustDrop: 0.1,
+};
