@@ -42,15 +42,20 @@ export function recompute() {
     k = state.nights,
     excl = excludedYears(d, k);
   const blended = blendAll(CELLS.map((_, i) => tripRaw(i, d, k, opt, excl)));
-  // With "use the live forecast" on, trips starting within a week blend in the cloud forecast; it loads in
-  // the background and triggers another recompute when it arrives. Off by default: a free API with a shared limit.
+  const ok = CELLS.map(filtersPass);
+  // With the live forecast ticked, trips with a night in the next week blend in the cloud forecast, fetched only for
+  // the regions in play (those passing the filters, plus the open one). It loads in the background and triggers
+  // another recompute on arrival. Off by default: a free API with a limit shared by everyone on one network.
   if (state.live && tripInRange(d, k)) {
-    ensureForecast(schedule);
+    ensureForecast(
+      CELLS.map((_, i) => i).filter((i) => ok[i] || i === state.sel),
+      schedule,
+    );
     blended.forEach((r, i) => applyForecast(r, i));
   }
   // Month odds are only needed for the month layer; skip them otherwise (they are the slow part).
   const mvals = state.layer === "month" ? CELLS.map((_, i) => monthRaw(i, monthOf(), opt)) : null;
-  results = CELLS.map((c, i) => Object.assign(blended[i], { ok: filtersPass(c), i, m: mvals ? monthBlend(mvals, i) : undefined }));
+  results = CELLS.map((_, i) => Object.assign(blended[i], { ok: ok[i], i, m: mvals ? monthBlend(mvals, i) : undefined }));
   state.excl = excl;
   moonLine();
   paint();

@@ -17,7 +17,7 @@ export const state = {
   opOdds: 0.6, // overlay opacity for the odds layers
   opRaster: 0.9, // overlay opacity for the darkness / trend rasters
   spots: true, // show spot markers
-  live: false, // blend the live cloud forecast into the odds (off by default: free API with a shared rate limit)
+  live: false, // update the odds with the live cloud forecast (off by default: a free API with a limit shared per network)
   sort: "odds", // results list order: "odds" | "dark"
   query: "", // results search text
   sel: null, // selected cell index, or null for the list

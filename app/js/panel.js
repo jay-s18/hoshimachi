@@ -31,16 +31,18 @@ function notices() {
     out = [];
   if (tripInRange(d, state.nights) && !state.live)
     out.push(
-      `Your trip starts within a week. Tick <b>Use the live forecast in the odds</b> (left) to blend today's cloud forecast into these historical odds, or check each region's own forecast in its card.`,
+      `Your trip is within a week, so a weather forecast is available. Tick <b>Use the live forecast in the odds</b> to update these odds with it.`,
     );
   else if (tripInRange(d, state.nights)) {
     const st = forecastStatus();
     if (st === "ready")
       out.push(
-        `<b>Live forecast included.</b> Nights in the next ${FORECAST.days} days blend today's Japan Meteorological Agency cloud forecast with the historical odds, trusting the forecast more the closer the night. The blend is a rough rule, not validated like the history.`,
+        `<b>Live forecast included.</b> These odds now mix the past ${YEARS.length} years with today's cloud forecast from the Japan Meteorological Agency. The closer a night is, the more the forecast counts. This mix is a rough estimate, not tested like the historical odds.`,
       );
     else if (st === "error")
-      out.push("The live cloud forecast couldn't load, so these are historical odds only. Check a forecast before you go.");
+      out.push(
+        "The live cloud forecast couldn't load, so these are historical odds only. It will try again in a minute; each region's card also has its own forecast.",
+      );
     else out.push("Loading the live cloud forecast for your trip…");
   }
   if (dt < 0 && d[0] > lastYear) out.push("These dates have passed. The odds show what history suggested beforehand.");
@@ -292,11 +294,11 @@ function renderCard(el, i) {
             box.innerHTML = `<div class="hint">The live forecast couldn't load (offline, blocked or over the free limit). Try "Live clouds" above.</div>`;
         });
     };
-    // Only ask the free weather service when the user wants it: automatically with the live forecast on,
+    // Only ask the free weather service when the user wants it: automatically with the live forecast ticked,
     // otherwise one tap per spot.
     if (state.live || pinWeatherCached(sp.lat, sp.lon)) load();
     else {
-      box.innerHTML = `<button type="button" class="act wide" id="wxLoad">Show the next ${FORECAST.days + 1} nights' forecast here</button>`;
+      box.innerHTML = `<button type="button" class="act wide" id="wxLoad">Show the forecast for the next ${FORECAST.days + 1} nights here</button>`;
       document.getElementById("wxLoad").onclick = load;
     }
   }

@@ -16,7 +16,9 @@ import { daysFromToday } from "./util.js";
 
 let groupOf = null; // cell index -> forecast point index
 let points = null; // [[lat, lon]] per forecast point
-let fc = { status: "off", hour: null, data: null }; // status: "off" | "loading" | "ready" | "error"
+// This hour's forecast, per point: data[pointIndex] = { t0, cc: [] }. Points are fetched only when a region
+// that needs them is in play, so a page load asks for the regions passing the filters, not all of Japan.
+let fc = { hour: null, data: [], loading: new Set(), retryAt: 0 };
 
 /** One forecast point per 2×2 block of region cells, at the mean of their centres. */
 function buildPoints() {
@@ -39,60 +41,72 @@ export function tripInRange(d, k) {
   return lead <= FORECAST.days && lead + k - 1 >= 0;
 }
 
-export const forecastStatus = () => fc.status;
-
-/**
- * Make sure a forecast at most an hour old is loaded or loading; `onReady` runs when a fetch finishes
- * (successfully or not), so the caller can recompute.
- *
- * A page load asks Open-Meteo for ~300 locations and its free tier allows 600 a minute, so the forecast is
- * kept in localStorage for the hour: reloading the page reuses it instead of fetching again. After a failure
- * (e.g. HTTP 429, over the limit) the next recompute retries once RETRY_MS has passed.
- */
-const STORE_KEY = "hoshimachi.forecast.v1";
-const RETRY_MS = 70_000;
-
-export function ensureForecast(onReady) {
-  const hour = new Date().toISOString().slice(0, 13);
-  if (fc.hour === hour && (fc.status === "ready" || fc.status === "loading")) return;
-  if (fc.hour === hour && fc.status === "error" && Date.now() - fc.failedAt < RETRY_MS) return;
-  if (!points) buildPoints();
-  const stored = readStore(hour);
-  if (stored) {
-    fc = { status: "ready", hour, data: stored };
-    return;
-  }
-  fc = { status: "loading", hour, data: null };
-  const batches = [];
-  for (let i = 0; i < points.length; i += FORECAST.batch) batches.push(points.slice(i, i + FORECAST.batch));
-  Promise.all(batches.map(fetchBatch))
-    .then((parts) => {
-      if (fc.hour !== hour) return;
-      fc = { status: "ready", hour, data: parts.flat() };
-      writeStore(hour, fc.data);
-    })
-    .catch((err) => {
-      console.warn("Live forecast unavailable:", err);
-      if (fc.hour !== hour) return;
-      fc = { status: "error", hour, data: null, failedAt: Date.now() };
-      setTimeout(onReady, RETRY_MS + 1000); // recompute then, which retries the fetch
-    })
-    .finally(onReady);
+let wanted = []; // point indices the current results need
+/** "ready" (every region in play has its forecast), "loading" or "error" (some are missing after a failure). */
+export function forecastStatus() {
+  if (wanted.every((k) => fc.data[k])) return "ready";
+  return fc.loading.size ? "loading" : "error";
 }
 
-/** The stored forecast for this hour and these points, or null. Storage may be unavailable (private mode). */
+/**
+ * Make sure this hour's forecast is loaded, or loading, for the regions `cells` (cell indices); `onReady` runs
+ * when a fetch finishes (successfully or not), so the caller can recompute.
+ *
+ * Open-Meteo's free tier counts every location and allows 600 a minute and 10,000 a day per network, shared by
+ * everyone on it (a classroom). So only the points the given regions need are asked for, already loaded points
+ * are never asked for again, and the forecast is kept in localStorage for the hour: reloading reuses it. After a
+ * failure (e.g. HTTP 429, over the limit) it retries after 1–2 minutes, at a random moment so that browsers that
+ * failed together (a class opening the link at once) don't all retry together.
+ */
+const STORE_KEY = "hoshimachi.forecast.v2";
+const retryDelay = () => 60_000 + Math.random() * 60_000;
+
+export function ensureForecast(cells, onReady) {
+  if (!points) buildPoints();
+  const hour = new Date().toISOString().slice(0, 13);
+  if (fc.hour !== hour) fc = { hour, data: readStore(hour), loading: new Set(), retryAt: 0 };
+  wanted = [...new Set(cells.map((i) => groupOf[i]))];
+  const missing = wanted.filter((k) => !fc.data[k] && !fc.loading.has(k));
+  if (!missing.length || Date.now() < fc.retryAt) return;
+  missing.forEach((k) => fc.loading.add(k));
+  const batches = [];
+  for (let i = 0; i < missing.length; i += FORECAST.batch) batches.push(missing.slice(i, i + FORECAST.batch));
+  const mine = fc;
+  Promise.all(
+    batches.map((ks) =>
+      fetchBatch(ks.map((k) => points[k])).then((rows) => {
+        if (fc !== mine) return;
+        ks.forEach((k, j) => (fc.data[k] = rows[j]));
+        writeStore(fc);
+      }),
+    ),
+  )
+    .catch((err) => {
+      console.warn("Live forecast unavailable:", err);
+      if (fc !== mine) return;
+      const wait = retryDelay();
+      fc.retryAt = Date.now() + wait;
+      setTimeout(onReady, wait + 500); // recompute then, which retries the fetch
+    })
+    .finally(() => {
+      missing.forEach((k) => mine.loading.delete(k));
+      onReady();
+    });
+}
+
+/** The stored forecast points for this hour, or none. Storage may be unavailable (private mode). */
 function readStore(hour) {
   try {
     const s = JSON.parse(localStorage.getItem(STORE_KEY) || "null");
-    return s && s.hour === hour && s.points === points.length && s.data.length === points.length ? s.data : null;
+    return s && s.hour === hour && s.points === points.length ? s.data : [];
   } catch {
-    return null;
+    return [];
   }
 }
 
-function writeStore(hour, data) {
+function writeStore(f) {
   try {
-    localStorage.setItem(STORE_KEY, JSON.stringify({ hour, points: points.length, data }));
+    localStorage.setItem(STORE_KEY, JSON.stringify({ hour: f.hour, points: points.length, data: f.data }));
   } catch {
     // Full or blocked storage only means the next reload fetches again.
   }
@@ -112,7 +126,7 @@ async function fetchBatch(pts) {
 
 /** Forecast clear-hour mask for cell ci on the night of [y, m, d] (bit k = hour firstHourLocal + k), or null. */
 function forecastMask(ci, dt) {
-  const pt = fc.data?.[groupOf[ci]];
+  const pt = fc.data[groupOf[ci]];
   if (!pt) return null;
   const n = manifest.night,
     clearBelow = n.clearCloudBelow * 100;
@@ -134,7 +148,7 @@ export const trust = (lead) => Math.max(0, FORECAST.trust0 - FORECAST.trustDrop 
  * r.fc[j] = { clearH, good, w, p } for nights the forecast covers (null for the others).
  */
 export function applyForecast(r, ci) {
-  if (fc.status !== "ready") return r;
+  if (!groupOf || !fc.data[groupOf[ci]]) return r;
   let ratio = 1,
     any = false;
   const nights = r.dates.map((dt, j) => {

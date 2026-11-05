@@ -8,7 +8,7 @@ All notable changes to this project. Data releases are listed with the period th
 - The Light trend layer is drawn in the browser from that grid, so the map's colour and the card always describe the same pixel (the pre-rendered image matched only ~86% of the time near colour edges).
 - Map overlays are sampled at the centre of each Web Mercator row, as Leaflet draws them (previously up to one pixel off); `bortle.png` and `trend.png` regenerated.
 
-- Live forecast in the odds is now a checkbox, off by default, so classmates sharing one network don't use up the free Open-Meteo limit; a region card loads its own forecast with one tap (automatically when the checkbox is on).
+- Live forecast in the odds is a checkbox, off by default; when the trip is within a week and it is off, a note explains what it does. A region card loads its own forecast with one tap (automatically when the checkbox is on). To stay inside the free Open-Meteo limit shared by a classroom's network, only the regions passing the filters (plus the open one) are fetched, each at most once an hour, and kept in `localStorage`.
 - Place search moved to float over the map's top-left corner and suggests places as you type (Photon, plus GSI for Japanese text) in a drop-down; Enter takes the first. Layer buttons sit below it; zoom buttons moved to the bottom right.
 - Light trend at the pin is given in % per decade, the same unit as the region figure.
 

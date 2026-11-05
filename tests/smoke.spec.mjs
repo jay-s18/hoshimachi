@@ -3,6 +3,13 @@
 import { existsSync } from "node:fs";
 import { test, expect } from "@playwright/test";
 
+// Never call the free weather and place services from tests: they have shared per-network limits, and the app
+// must work without them anyway (it falls back to historical odds and plain coordinates).
+const LIVE_APIS = /open-meteo\.com|openstreetmap\.org|photon\.komoot\.io|gsi\.go\.jp\/(?!xyz)/;
+test.beforeEach(async ({ page }) => {
+  await page.route(LIVE_APIS, (r) => r.abort());
+});
+
 test("loads, ranks regions and opens a card", async ({ page }) => {
   // Fail on script errors and on any failed request to our own origin. Third-party requests
   // (map tiles, web fonts) may be blocked in CI and are not part of this test.
