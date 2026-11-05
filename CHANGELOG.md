@@ -8,6 +8,10 @@ All notable changes to this project. Data releases are listed with the period th
 
 - Live cloud forecast: for trips starting within 7 days, nights in range blend the Japan Meteorological Agency forecast (via Open-Meteo) with the historical odds. The trust rule is hand-set and labelled as not validated.
 - Shareable links: dates, settings and the pinned spot are kept in the URL; a Share button copies it.
+- "Live forecast at the pin" section: the next 8 nights hour by hour (cloud cover, usable dark hours), with clear hours, low temperature, wind, rain and dew risk.
+- Place search in the header: instant suggestions from spots and towns, and any named place in Japan via GSI / OpenStreetMap on Enter.
+- Light trend in the region card is now also read at the pin (~1 km), not only for the whole region, so it matches the map's colours.
+- The trip forecast is cached for an hour in `localStorage` and retried automatically after a rate-limit error.
 - The pinned spot shows its place name (local district plus municipality, county and prefecture) from GSI and OpenStreetMap.
 - Spot markers select their region and pin the exact spot.
 - Roads is the default base map, without labels until zoom 8; Plain is the fallback when tiles can't load.

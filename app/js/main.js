@@ -8,6 +8,7 @@ import { nextNewMoon } from "./astro.js";
 import { centerOn, initMap, select } from "./map.js";
 import { readLink } from "./link.js";
 import { initControls } from "./controls.js";
+import { initSearch } from "./search.js";
 import { recompute } from "./app.js";
 
 /** Default trip length on first load, in nights. */
@@ -99,6 +100,7 @@ async function main() {
     const shared = readLink(); // settings from a shared link override the defaults above
     initMap();
     initControls();
+    initSearch();
     recompute();
     if (shared.sel !== null) {
       select(shared.sel, shared.pin);

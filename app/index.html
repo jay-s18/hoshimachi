@@ -36,7 +36,21 @@
           <path d="M22.5 5.2 L23.4 9.1 L27.3 10 L23.4 10.9 L22.5 14.8 L21.6 10.9 L17.7 10 L21.6 9.1 Z" fill="#d4a656" /></svg
         ><span class="kanji">星待ち</span>
       </div>
-      <div class="tag"></div>
+      <div class="psearch" role="search">
+        <input
+          id="placeSearch"
+          type="search"
+          placeholder="Search a place in Japan: Nobeyama, 摩周湖, Mount Fuji…"
+          autocomplete="off"
+          role="combobox"
+          aria-autocomplete="list"
+          aria-expanded="false"
+          aria-controls="placeList"
+          aria-label="Search a place in Japan"
+        />
+        <ul id="placeList" role="listbox" hidden></ul>
+        <div id="placeStatus" class="ps-status" role="status" aria-live="polite"></div>
+      </div>
       <button class="hbtn" id="shareBtn" type="button" title="Copy a link to this exact view: dates, settings and pinned spot">
         Share
       </button>
@@ -299,7 +313,7 @@
           </li>
           <li>
             Place names for the pin: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>
-            contributors (Nominatim) and GSI reverse geocoder (国土地理院).
+            contributors (Nominatim) and GSI reverse geocoder and address search (国土地理院).
           </li>
         </ul>
         <p class="hint">

@@ -8,6 +8,7 @@ import { ib, pct } from "./util.js";
 import { results } from "./app.js";
 import { renderPanel } from "./panel.js";
 import { writeLink } from "./link.js";
+import { nameHint } from "./place.js";
 
 let map, landFill, ovB, ovT, rects, spotLayer, selR, BASES;
 let selMarker = null,
@@ -92,6 +93,7 @@ export function initMap() {
         // Markers swallow clicks, so the region square underneath never sees them: select it here instead.
         .on("click", () => {
           const i = cellAt(s[3], s[4]);
+          nameHint(s[3], s[4], `${s[1]} ${s[2]}`);
           if (i >= 0) select(i, [s[3], s[4]]);
         }),
     ),
@@ -99,7 +101,7 @@ export function initMap() {
 }
 
 /** Index of the 0.25° cloud cell containing [lat, lon], or -1 if none (e.g. open sea). */
-function cellAt(lat, lon) {
+export function cellAt(lat, lon) {
   return CELLS.findIndex((c) => Math.abs(lat - c.lat) <= 0.125 && Math.abs(lon - c.lon) <= 0.125);
 }
 

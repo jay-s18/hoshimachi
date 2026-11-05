@@ -7,12 +7,13 @@ import { state, ymd, monthOf } from "./state.js";
 import { addDays, daysFromToday, esc, fmtDate, ib, pct } from "./util.js";
 import { bortleOf, hoursLabel, moonIcon, moonInfo, moonName } from "./astro.js";
 import { monthSeries } from "./odds.js";
-import { drawPanorama, horizonProfile, spotInfo } from "./sky.js";
+import { drawPanorama, horizonProfile, spotInfo, trendAt } from "./sky.js";
 import { results, distOf } from "./app.js";
 import { clearSelection, select } from "./map.js";
 import { cachedPlace, lookupPlace } from "./place.js";
 import { forecastStatus, tripInRange } from "./forecast.js";
 import { writeLink } from "./link.js";
+import { pinWeather, weatherHtml } from "./weather.js";
 
 const rangeTxt = (r) => `${pct(r.lo)}–${pct(r.hi)}`;
 
@@ -99,7 +100,7 @@ export function renderPanel() {
     .join("");
   el.innerHTML = `<div class="reshead"><h2>Best regions for ${fmtDate(d)}${state.nights > 1 ? "–" + fmtDate(end) : ""}, ${state.nights} night${state.nights > 1 ? "s" : ""}</h2>
     ${notices()}
-    <input id="search" type="search" placeholder="Search a town or prefecture" value="${esc(state.query)}" aria-label="Search regions">
+    <input id="search" type="search" placeholder="Filter regions by town or prefecture" value="${esc(state.query)}" aria-label="Filter regions">
     <div class="row" style="justify-content:space-between"><span class="lblrow hint">${passing.length} regions pass your filters${ib(`Odds are the chance of at least one good night on your trip, from replaying ${periodLabel()} weather around your dates. The range is a 95% interval from year-to-year variation. Regions above the dashed line are within the uncertainty of #1, so treat them as tied.`, "Odds and ranges")}</span>
       <div class="seg" id="sortSeg" style="flex:none"><button type="button" data-v="odds" class="${state.sort !== "dark" ? "on" : ""}">Best odds</button><button type="button" data-v="dark" class="${state.sort === "dark" ? "on" : ""}">Darkest</button></div></div></div>
     ${noWin ? `<div class="empty">No usable dark hours on these dates: the moon is up and bright all night${state.target === "mw" ? " or the Milky Way core stays below 10°" : ""}. Try dates nearer the new moon.</div>` : ""}
@@ -164,9 +165,9 @@ function pinReading(sp) {
 }
 
 function trendText(c) {
-  if (c.trend == null) return "Too little artificial light here for the satellite to measure a trend.";
+  if (c.trend == null) return "Whole region (~28 km): too little artificial light for the satellite to measure a trend.";
   const col = c.trend > 3 ? "var(--warn)" : "var(--ink)";
-  return `Satellite-measured light in this region: <b class="num" style="color:${col}">${c.trend > 0 ? "+" : ""}${c.trend}% per decade</b>`;
+  return `Whole region (~28 km), all its lights together: <b class="num" style="color:${col}">${c.trend > 0 ? "+" : ""}${c.trend}% per decade</b>`;
 }
 
 /** The pinned spot's place name: undefined = still looking up, null = not found. */
@@ -209,6 +210,11 @@ function renderCard(el, i) {
         ${atBest ? "" : `<button type="button" class="act wide" id="toBest">Back to this region's darkest spot</button>`}
         <div class="hint">Satellite estimate, not a surveyed site. Check road access, land access and safety before you go.</div>
       </div></div>
+    ${
+      sp.sqm === null
+        ? ""
+        : `<div class="sect"><h4>Live forecast at the pin${ib(`Japan Meteorological Agency forecast for the next ${FORECAST.days + 1} nights at the pinned spot, hour by hour from 18:00 to 05:00. Outlined hours are usable: astronomically dark, with the moon down or under 25% lit. A night counts as good when its clear usable hours meet your "good night needs" setting.`, "Live forecast")}</h4><div id="wxBox"><div class="hint">Loading the forecast…</div></div></div>`
+    }
     <div class="sect"><h4>Sky from the pin${ib("An approximate picture of the whole sky from the pin: horizon at the bottom, zenith at the top, all the way round. Glow falls with distance squared and haze, so a big city far away can look fainter than a village nearby, and distant domes sit lower. The sky is brightest near the horizon because you look through more air there (about 4× the zenith). Stars fade where the glow is strong. Hills that would hide a town are not modelled, and white LEDs are under-counted. An illustration, not a measurement.", "Sky from the pin")}</h4>
       <canvas id="pano" class="pano" role="img" aria-label="Simulated horizon glow around the pin"></canvas>
       <div class="hint" id="panoTxt" style="margin-top:6px"></div></div>
@@ -232,7 +238,7 @@ function renderCard(el, i) {
       <div class="years">${r.luck.map((v, k) => `<div class="yr"><i class="${v ? "y" : ""}${v === null ? " x" : ""}" title="${YEARS[k]}: ${v === null ? "not used" : v ? "at least one good night" : "no good night"}"></i>${String(YEARS[k]).slice(2)}</div>`).join("")}</div>
       <div class="hint" style="margin-top:4px">Filled = at least one good night on these dates that year.</div></div>
     <div class="sect"><h4>Best months here${ib("Share of all nights in each month with a good clear window, using your hours setting. The moon is not counted, so pick new-moon dates within the best months.", "Best months")}</h4>${mc.svg}<div class="hint">Best: ${MONTHS[mc.best]} (${pct(mc.vals[mc.best])})</div></div>
-    <div class="sect"><h4>Is the sky here changing?${ib(`Change in satellite-measured night light in this region${trendSince}. The satellite under-sees blue-white LEDs, so real brightening is likely worse than shown.`, "Light trend")}</h4><div class="hint">${trendText(c)}</div></div>
+    <div class="sect"><h4>Is the sky here changing?${ib(`Change in satellite-measured night light in this region${trendSince}. The satellite under-sees blue-white LEDs, so real brightening is likely worse than shown.`, "Light trend")}</h4><div class="hint" id="trendPin">${sp.sqm === null ? "" : "Reading the trend at the pin…"}</div><div class="hint" style="margin-top:4px">${trendText(c)}</div></div>
     <div class="sect"><h4>Towns in this region</h4><div class="towns">${c.also
       .map((a) => {
         const [e, j] = a.split("|");
@@ -256,6 +262,33 @@ function renderCard(el, i) {
   };
   const tb = document.getElementById("toBest");
   if (tb) tb.onclick = () => select(i);
+
+  if (sp.sqm !== null) {
+    const [wlat, wlon] = state.pin;
+    pinWeather(sp.lat, sp.lon)
+      .then((w) => {
+        const box = document.getElementById("wxBox");
+        if (box && state.pin && state.pin[0] === wlat && state.pin[1] === wlon) box.innerHTML = weatherHtml(w, sp.lat, sp.lon);
+      })
+      .catch(() => {
+        const box = document.getElementById("wxBox");
+        if (box) box.innerHTML = `<div class="hint">The live forecast couldn't load (offline or blocked). Try "Live clouds" above.</div>`;
+      });
+  }
+
+  if (sp.sqm !== null)
+    trendAt(sp.lat, sp.lon)
+      .then((t) => {
+        const box = document.getElementById("trendPin");
+        if (!box) return;
+        box.innerHTML = t
+          ? `At the pin (~1 km): <b style="color:rgb(${t.rgb.join(",")})">${t.label}</b>, ${t.detail}.`
+          : "At the pin (~1 km): too little artificial light for the satellite to measure a trend, a good sign for darkness.";
+      })
+      .catch(() => {
+        const box = document.getElementById("trendPin");
+        if (box) box.textContent = "";
+      });
 
   if (sp.sqm !== null && cachedPlace(sp.lat, sp.lon) === undefined) {
     const [plat, plon] = state.pin;

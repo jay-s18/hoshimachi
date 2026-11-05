@@ -44,23 +44,58 @@ export const forecastStatus = () => fc.status;
 /**
  * Make sure a forecast at most an hour old is loaded or loading; `onReady` runs when a fetch finishes
  * (successfully or not), so the caller can recompute.
+ *
+ * A page load asks Open-Meteo for ~300 locations and its free tier allows 600 a minute, so the forecast is
+ * kept in localStorage for the hour: reloading the page reuses it instead of fetching again. After a failure
+ * (e.g. HTTP 429, over the limit) the next recompute retries once RETRY_MS has passed.
  */
+const STORE_KEY = "hoshimachi.forecast.v1";
+const RETRY_MS = 70_000;
+
 export function ensureForecast(onReady) {
   const hour = new Date().toISOString().slice(0, 13);
-  if (fc.hour === hour && fc.status !== "off") return;
+  if (fc.hour === hour && (fc.status === "ready" || fc.status === "loading")) return;
+  if (fc.hour === hour && fc.status === "error" && Date.now() - fc.failedAt < RETRY_MS) return;
   if (!points) buildPoints();
+  const stored = readStore(hour);
+  if (stored) {
+    fc = { status: "ready", hour, data: stored };
+    return;
+  }
   fc = { status: "loading", hour, data: null };
   const batches = [];
   for (let i = 0; i < points.length; i += FORECAST.batch) batches.push(points.slice(i, i + FORECAST.batch));
   Promise.all(batches.map(fetchBatch))
     .then((parts) => {
-      if (fc.hour === hour) fc = { status: "ready", hour, data: parts.flat() };
+      if (fc.hour !== hour) return;
+      fc = { status: "ready", hour, data: parts.flat() };
+      writeStore(hour, fc.data);
     })
     .catch((err) => {
       console.warn("Live forecast unavailable:", err);
-      if (fc.hour === hour) fc = { status: "error", hour, data: null };
+      if (fc.hour !== hour) return;
+      fc = { status: "error", hour, data: null, failedAt: Date.now() };
+      setTimeout(onReady, RETRY_MS + 1000); // recompute then, which retries the fetch
     })
     .finally(onReady);
+}
+
+/** The stored forecast for this hour and these points, or null. Storage may be unavailable (private mode). */
+function readStore(hour) {
+  try {
+    const s = JSON.parse(localStorage.getItem(STORE_KEY) || "null");
+    return s && s.hour === hour && s.points === points.length && s.data.length === points.length ? s.data : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeStore(hour, data) {
+  try {
+    localStorage.setItem(STORE_KEY, JSON.stringify({ hour, points: points.length, data }));
+  } catch {
+    // Full or blocked storage only means the next reload fetches again.
+  }
 }
 
 async function fetchBatch(pts) {

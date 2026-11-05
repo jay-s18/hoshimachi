@@ -7,8 +7,8 @@
  * the region data. The panorama is an illustration, not a measurement: no terrain, no weather,
  * and the satellite under-counts white LEDs.
  */
-import { PANO } from "./config.js";
-import { GRID, RADG, RADLUT, SOURCES, SQMG } from "./data.js";
+import { PANO, TREND_CLASSES } from "./config.js";
+import { BOUNDS, GRID, OVERLAY_URLS, RADG, RADLUT, SOURCES, SQMG } from "./data.js";
 import { R2D, dirName, hav } from "./util.js";
 
 /** Pixel [row, col] containing [lat, lon]. */
@@ -245,4 +245,48 @@ export function drawPanorama(cv, I) {
       bi = i;
     }
   return { dir: dirName(bi * 2 + 1), peak: Math.min(1, Math.log10(1 + best / B0) / GREF) };
+}
+
+/* ---------- light trend at a point, read back from the trend overlay ---------- */
+let trendPx = null; // Promise<{ data, w, h }>
+
+function trendPixels() {
+  trendPx ??= new Promise((resolve, reject) => {
+    const im = new Image();
+    im.onload = () => {
+      const cv = document.createElement("canvas");
+      cv.width = im.naturalWidth;
+      cv.height = im.naturalHeight;
+      const ctx = cv.getContext("2d", { willReadFrequently: true });
+      ctx.drawImage(im, 0, 0);
+      resolve({ data: ctx.getImageData(0, 0, cv.width, cv.height).data, w: cv.width, h: cv.height });
+    };
+    im.onerror = () => reject(new Error("trend overlay failed to load"));
+    im.src = OVERLAY_URLS.trend;
+  });
+  return trendPx;
+}
+
+const merc = (lat) => Math.log(Math.tan(Math.PI / 4 + lat / R2D / 2));
+
+/**
+ * The light-trend class of the ~1 km pixel at [lat, lon], as drawn on the Light trend layer:
+ * one of TREND_CLASSES, or null where the satellite sees too little light to measure a trend.
+ * The overlay's rows are evenly spaced in Web Mercator (pipeline overlays.mercator_rows).
+ */
+export async function trendAt(lat, lon) {
+  const { data, w, h } = await trendPixels();
+  const [[south, west], [north, east]] = BOUNDS;
+  const row = Math.round(((merc(north) - merc(lat)) / (merc(north) - merc(south))) * (h - 1));
+  const col = Math.floor(((lon - west) / (east - west)) * w);
+  if (row < 0 || col < 0 || row >= h || col >= w) return null;
+  const i = (row * w + col) * 4;
+  if (data[i + 3] === 0) return null;
+  let best = null,
+    bestD = Infinity;
+  for (const t of TREND_CLASSES) {
+    const d = t.rgb.reduce((a, v, k) => a + (v - data[i + k]) ** 2, 0);
+    if (d < bestD) [best, bestD] = [t, d];
+  }
+  return best;
 }

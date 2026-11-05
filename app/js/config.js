@@ -121,7 +121,9 @@ export const PANO = {
 export const PLACE_API = {
   nominatim: "https://nominatim.openstreetmap.org/reverse",
   gsi: "https://mreversegeocoder.gsi.go.jp/reverse-geocoder/LonLatToAddress",
+  gsiSearch: "https://msearch.gsi.go.jp/address-search/AddressSearch",
   minIntervalMs: 1100,
+  searchLimit: 8,
 };
 
 /**
@@ -139,3 +141,15 @@ export const FORECAST = {
   trust0: 0.85,
   trustDrop: 0.1,
 };
+
+/**
+ * Light-trend overlay colours (trend.png) and what they mean; must match TREND_* in
+ * pipeline/src/hoshimachi_pipeline/overlays.py and [overlays] trend_stable / trend_fast in pipeline/config.toml.
+ * Used to read the trend at the pin back from the overlay image.
+ */
+export const TREND_CLASSES = [
+  { rgb: [255, 182, 92], label: "brightening fast", detail: "more than 3% a year" },
+  { rgb: [196, 112, 40], label: "brightening", detail: "1–3% a year" },
+  { rgb: [110, 104, 96], label: "stable", detail: "within ±1% a year" },
+  { rgb: [88, 136, 200], label: "dimming", detail: "more than 1% a year" },
+];

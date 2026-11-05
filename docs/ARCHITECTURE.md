@@ -28,7 +28,9 @@ Plain ES modules, loaded natively by the browser: no framework, no bundler, no b
 | `controls.js` | The settings panel, moon strip and info tooltips.                                                                                                                             |
 | `app.js`      | `recompute()`: runs the model for every region after a change and redraws. Holds `results`.                                                                                   |
 | `forecast.js` | Live cloud forecast (JMA via Open-Meteo) blended into the odds for trip nights within 7 days. A hand-set trust rule, not validated like the history; loads in the background. |
-| `place.js`    | Place name for the pin from GSI (local district) and Nominatim (English municipality, county, prefecture); throttled and cached.                                              |
+| `place.js`    | Place names: reverse lookup for the pin and place search, from GSI and Nominatim; throttled and cached. Names chosen in search or from a spot marker are kept on the pin.     |
+| `weather.js`  | "Live forecast at the pin": the next 8 nights hour by hour (cloud, usable dark hours) with clear hours, low, wind, rain, dew.                                                 |
+| `search.js`   | Header place search: instant suggestions from spots and towns; GSI / Nominatim search on Enter. Selects the region and pins the place.                                        |
 | `link.js`     | Shareable links: reads settings and the selected spot from the URL at start-up and keeps the address bar in sync.                                                             |
 | `util.js`     | Small pure helpers (dates, distances, escaping).                                                                                                                              |
 
