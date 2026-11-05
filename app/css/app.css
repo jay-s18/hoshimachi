@@ -94,20 +94,34 @@ header {
   text-transform: uppercase;
   color: var(--star);
 }
-.psearch {
-  position: relative;
+.spacer {
   flex: 1;
-  min-width: 0;
-  max-width: 520px;
-  margin: 0 auto;
+}
+/* Place search, floating over the map's top-left corner (js/search.js) */
+.msearch {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  z-index: 1000;
+  width: min(340px, calc(100% - 230px));
+  min-width: 200px;
+}
+.msearch-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--dim);
+  pointer-events: none;
 }
 #placeSearch {
   width: 100%;
-  background: #0e0e11;
+  background: rgba(16, 16, 19, 0.96);
   border: 1px solid var(--rule);
   border-radius: 999px;
-  padding: 7px 14px;
+  padding: 8px 14px 8px 34px;
   color: var(--ink);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.45);
 }
 #placeSearch:focus {
   border-color: var(--star);
@@ -115,21 +129,20 @@ header {
 }
 #placeList {
   position: absolute;
-  top: calc(100% + 4px);
+  top: calc(100% + 6px);
   left: 0;
-  right: 0;
-  z-index: 1500;
+  width: max(100%, 320px);
   list-style: none;
   margin: 0;
   padding: 4px;
   background: var(--panel);
   border: 1px solid var(--rule);
   border-radius: 10px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
-  max-height: 60vh;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.55);
+  max-height: min(60vh, 460px);
   overflow: auto;
 }
-#placeList li {
+#placeList li[data-k] {
   display: flex;
   flex-direction: column;
   gap: 1px;
@@ -138,28 +151,21 @@ header {
   cursor: pointer;
   font-size: 13px;
 }
-#placeList li.on,
-#placeList li:hover {
+#placeList li[data-k].on,
+#placeList li[data-k]:hover {
   background: #1d1c21;
 }
-#placeList li.ps-all {
-  flex-direction: row;
-  justify-content: space-between;
-  color: var(--star);
+#placeList .ps-group {
+  padding: 8px 10px 3px;
+  font-size: 10.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--dim);
 }
-.ps-status {
-  position: absolute;
-  top: calc(100% + 4px);
-  left: 14px;
-  z-index: 1500;
+#placeList .ps-note {
+  padding: 6px 10px;
   font-size: 12px;
   color: var(--dim);
-  background: var(--night);
-  padding: 2px 6px;
-  border-radius: 4px;
-}
-.ps-status:empty {
-  display: none;
 }
 .hbtn {
   background: transparent;
@@ -611,9 +617,8 @@ ol.list li.divider:hover {
 }
 .layers {
   position: absolute;
-  top: 12px;
-  left: 50%;
-  transform: translateX(-50%);
+  top: 58px;
+  left: 12px;
   z-index: 500;
   background: rgba(16, 16, 19, 0.94);
 }
@@ -910,8 +915,11 @@ dialog::backdrop {
   main {
     grid-template-columns: 260px 1fr 320px;
   }
-  .psearch {
-    max-width: none;
+  .msearch {
+    width: calc(100% - 24px);
+  }
+  .basebox {
+    top: 104px;
   }
 }
 @media (max-width: 860px) {
@@ -1036,4 +1044,18 @@ dialog::backdrop {
 }
 .wx-key i.use {
   box-shadow: inset 0 0 0 1px #e4ddcf;
+}
+.trend-pin {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  font-size: 13px;
+  color: var(--ink);
+}
+.trend-pin .sw {
+  flex: none;
+  display: inline-block;
+  width: 11px;
+  height: 11px;
+  border-radius: 2px;
 }

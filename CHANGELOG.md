@@ -4,6 +4,14 @@ All notable changes to this project. Data releases are listed with the period th
 
 ## [Unreleased]
 
+- Exact light trend per ~1 km pixel: the pipeline publishes `light-trend.u8.gz` (% per decade), generated for the current data from the same VIIRS export (verified to reproduce `trend.png` and every region's trend exactly). The region card shows the pin's own % ("−13% per decade · dimming") as well as the region's.
+- The Light trend layer is drawn in the browser from that grid, so the map's colour and the card always describe the same pixel (the pre-rendered image matched only ~86% of the time near colour edges).
+- Map overlays are sampled at the centre of each Web Mercator row, as Leaflet draws them (previously up to one pixel off); `bortle.png` and `trend.png` regenerated.
+
+- Live forecast in the odds is now a checkbox, off by default, so classmates sharing one network don't use up the free Open-Meteo limit; a region card loads its own forecast with one tap (automatically when the checkbox is on).
+- Place search moved to float over the map's top-left corner and suggests places as you type (Photon, plus GSI for Japanese text) in a drop-down; Enter takes the first. Layer buttons sit below it; zoom buttons moved to the bottom right.
+- Light trend at the pin is given in % per decade, the same unit as the region figure.
+
 ### App
 
 - Live cloud forecast: for trips starting within 7 days, nights in range blend the Japan Meteorological Agency forecast (via Open-Meteo) with the historical odds. The trust rule is hand-set and labelled as not validated.

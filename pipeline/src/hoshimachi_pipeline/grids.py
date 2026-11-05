@@ -22,6 +22,17 @@ def radiance_codes(cfg: Config, radiance: np.ndarray) -> np.ndarray:
     return q.astype(np.uint8)
 
 
+def trend_codes(cfg: Config, radiance: np.ndarray, slope: np.ndarray, land: np.ndarray) -> np.ndarray:
+    """uint8 per pixel: night-light trend in % per decade, round(10 × 100 × slope / radiance) + trend_offset,
+    clipped to 0..254 (±127 %). 255 where the overlay shows no trend: sea, or radiance at or below
+    [overlays] trend_min_radiance. Same pixels and formula as the trend overlay, so the two agree. Decoded in
+    app/js/sky.js."""
+    lit = land & (radiance > cfg.overlays.trend_min_radiance)
+    pct = np.where(lit, slope / np.maximum(radiance, cfg.overlays.trend_min_radiance) * 1000, 0)
+    q = np.clip(np.round(pct) + cfg.grids.trend_offset, 0, 254)
+    return np.where(lit, q, 255).astype(np.uint8)
+
+
 def light_sources(cfg: Config, radiance: np.ndarray, midx: np.ndarray, transform, namer: Namer) -> list[list]:
     """Municipalities ranked by total radiance: [lat, lon, "English (日本語)", total], centre radiance-weighted."""
     h, w = radiance.shape

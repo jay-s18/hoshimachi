@@ -2,7 +2,8 @@
  * The Leaflet map: base layers, region squares, raster overlays, legend, selection and pin.
  */
 import { BASE_TILES, BORTLE_COLORS, GSI_ATTR, MONTHS, ODDS_STOPS, SPOTS, TILE_PROBE } from "./config.js";
-import { BOUNDS, CELLS, OVERLAY_URLS, PREFS } from "./data.js";
+import { BOUNDS, CELLS, GRID, OVERLAY_URLS, PREFS, TRENDG } from "./data.js";
+import { trendClassOf } from "./sky.js";
 import { state, monthOf } from "./state.js";
 import { ib, pct } from "./util.js";
 import { results } from "./app.js";
@@ -18,8 +19,9 @@ let selMarker = null,
   startBase; // the base map the page opens with (state.base at start-up)
 
 export function initMap() {
-  map = L.map("map", { zoomControl: true, attributionControl: false, minZoom: 4, maxZoom: 15, zoomSnap: 0.5, preferCanvas: true });
+  map = L.map("map", { zoomControl: false, attributionControl: false, minZoom: 4, maxZoom: 15, zoomSnap: 0.5, preferCanvas: true });
   L.control.attribution({ prefix: false, position: "bottomright" }).addTo(map);
+  L.control.zoom({ position: "bottomright" }).addTo(map); // the top-left corner holds the place search
   map.fitBounds([
     [30.2, 128.8],
     [45.6, 146.0],
@@ -55,7 +57,11 @@ export function initMap() {
   probeTiles();
 
   ovB = L.imageOverlay(OVERLAY_URLS.bortle, BOUNDS, { opacity: 0.95, interactive: false, pane: "rasters", className: "ov-smooth" });
-  ovT = L.imageOverlay(OVERLAY_URLS.trend, BOUNDS, { opacity: 0.95, interactive: false, pane: "rasters" });
+  // Light trend: drawn tile by tile from the per-pixel grid when the data has it, so every screen pixel shows
+  // exactly the ~1 km pixel under it (the same value the pin reads). Older data: the pre-rendered image.
+  ovT = TRENDG
+    ? trendTiles({ opacity: 0.95, pane: "rasters" })
+    : L.imageOverlay(OVERLAY_URLS.trend, BOUNDS, { opacity: 0.95, interactive: false, pane: "rasters" });
   L.geoJSON(PREFS, {
     pane: "lines",
     renderer: L.svg({ pane: "lines" }),
@@ -103,6 +109,52 @@ export function initMap() {
 /** Index of the 0.25° cloud cell containing [lat, lon], or -1 if none (e.g. open sea). */
 export function cellAt(lat, lon) {
   return CELLS.findIndex((c) => Math.abs(lat - c.lat) <= 0.125 && Math.abs(lon - c.lon) <= 0.125);
+}
+
+/** Canvas tiles coloured from TRENDG: each screen pixel takes the trend class of the grid pixel under it. */
+function trendTiles(opts) {
+  const lut = new Uint8ClampedArray(256 * 4); // trend code -> RGBA (255 = no trend: transparent)
+  for (let q = 0; q < 255; q++) {
+    const t = trendClassOf(q - GRID.trendOffset);
+    lut.set([...t.rgb, t.a], q * 4);
+  }
+  const Layer = L.GridLayer.extend({
+    createTile(coords) {
+      const size = this.getTileSize(),
+        tile = document.createElement("canvas");
+      tile.width = size.x;
+      tile.height = size.y;
+      const ctx = tile.getContext("2d"),
+        img = ctx.createImageData(size.x, size.y),
+        px = img.data;
+      const x0 = coords.x * size.x,
+        y0 = coords.y * size.y;
+      // Grid column for each tile column and grid row for each tile row (pixel centres).
+      const cols = Int32Array.from({ length: size.x }, (_, x) => {
+        const lon = map.unproject([x0 + x + 0.5, y0], coords.z).lng;
+        return Math.floor((lon - GRID.w) / GRID.step);
+      });
+      for (let y = 0; y < size.y; y++) {
+        const r = Math.floor((GRID.n - map.unproject([x0, y0 + y + 0.5], coords.z).lat) / GRID.step);
+        if (r < 0 || r >= GRID.H) continue;
+        const row = r * GRID.W;
+        for (let x = 0; x < size.x; x++) {
+          const c = cols[x];
+          if (c < 0 || c >= GRID.W) continue;
+          const k = TRENDG[row + c] * 4,
+            o = (y * size.x + x) * 4;
+          px[o] = lut[k];
+          px[o + 1] = lut[k + 1];
+          px[o + 2] = lut[k + 2];
+          px[o + 3] = lut[k + 3];
+        }
+      }
+      ctx.putImageData(img, 0, 0);
+      return tile;
+    },
+  });
+  const [[s, w], [n, e]] = BOUNDS;
+  return new Layer({ ...opts, bounds: L.latLngBounds([s, w], [n, e]), updateWhenZooming: false });
 }
 
 /**

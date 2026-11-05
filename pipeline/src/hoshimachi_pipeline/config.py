@@ -114,6 +114,7 @@ class Grids:
     sqm_code_max: int
     radiance_max: float
     radiance_levels: int
+    trend_offset: int
     light_source_min_radiance: float
 
 

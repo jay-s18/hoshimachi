@@ -57,7 +57,8 @@
     "sqmOffset": 15.0,
     "sqmScale": 20.0,
     "radianceMax": 500.0,
-    "radianceLevels": 254
+    "radianceLevels": 254,
+    "trendOffset": 127
   },
   "validation": {
     "tuneYears": [
@@ -216,16 +217,22 @@
       "sha256": "9fb7fec6c83d824141fa82463a391ba87d0d82f2777d8f2466b85bcd99112e71",
       "description": "uint8 log radiance code per pixel, rows × cols, gzip"
     },
+    "lightTrend": {
+      "path": "light-trend.u8.gz",
+      "bytes": 244005,
+      "sha256": "77845a660206423169c649514c82dc39ef99efc9b2379f551630fd40e409ff84",
+      "description": "uint8 trend code (% per decade + trendOffset; 255 = none), rows × cols, gzip"
+    },
     "bortleOverlay": {
       "path": "bortle.png",
-      "bytes": 289618,
-      "sha256": "23044f6501ce6a5dffac8e126eed9301484c7f70bbfc15e6b91960f43be4a2c5",
+      "bytes": 289751,
+      "sha256": "a39f72d0e4497d8cc91082e0d95a1eee379a37ad6a6a5bf53b53f92dc72d1ab1",
       "description": "Sky brightness overlay on the Bortle colour ramp, Web Mercator rows"
     },
     "trendOverlay": {
       "path": "trend.png",
-      "bytes": 251299,
-      "sha256": "b17248b4333b1c1447fa98b0ea5c82403b60db65b243c0f93ec2cea646c4b3d6",
+      "bytes": 252118,
+      "sha256": "3ab0e7c03a28a25cc13cea91d84c3b5a3ddff2d94f968fb290b1dcf8a78acc11",
       "description": "Light-trend overlay, Web Mercator rows"
     }
   }

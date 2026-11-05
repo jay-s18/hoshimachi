@@ -13,7 +13,7 @@ import numpy as np
 from . import inputs, overlays
 from .cells import build_cells
 from .config import Config
-from .grids import light_sources, radiance_codes, sqm_codes
+from .grids import light_sources, radiance_codes, sqm_codes, trend_codes
 from .names import Namer
 from .publish import publish
 from .sky import calibrate, skyglow
@@ -122,6 +122,7 @@ def run_build(cfg: Config, *, step: int = 1, force: bool = False, skip_validatio
             "sqmScale": g.sqm_scale,
             "radianceMax": g.radiance_max,
             "radianceLevels": g.radiance_levels,
+            "trendOffset": g.trend_offset,
         },
         "validation": _validation_summary(report),
         "stats": stats,
@@ -133,6 +134,7 @@ def run_build(cfg: Config, *, step: int = 1, force: bool = False, skip_validatio
         "nightMasks": masks.astype("<u2").tobytes(),
         "skyBrightness": sqm_codes(cfg, sqm, land).tobytes(),
         "radiance": radiance_codes(cfg, lights.radiance).tobytes(),
+        "lightTrend": trend_codes(cfg, lights.radiance, lights.slope, land).tobytes(),
         "bortleOverlay": overlays.bortle_png(cfg, sqm, land, rows),
         "trendOverlay": overlays.trend_png(cfg, lights.radiance, lights.slope, land, rows),
     }

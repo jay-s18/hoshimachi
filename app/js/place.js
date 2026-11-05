@@ -3,10 +3,11 @@
  *   - lookupPlace(): the name for the pinned spot, e.g. "野辺山 · Minamimaki, Minamisaku County, Nagano".
  *     GSI gives the local district (大字・町名), present almost everywhere on land in Japan; Nominatim
  *     (OpenStreetMap) gives municipality, county and prefecture in English where OSM has it.
- *   - searchPlaces(): find a named place. GSI for Japanese text (it knows 地名 well), Nominatim otherwise,
- *     each falling back to the other when it finds nothing.
- * Nominatim allows one request a second and no search-as-you-type, so its requests share one throttle and
- * search only runs when the user submits. Either service may fail; callers then show fewer details.
+ *   - searchPlaces(): places matching typed text, for the search box's live suggestions. Photon (OpenStreetMap
+ *     data, built for search-as-you-type) for any text; GSI's address search is added for Japanese text, where
+ *     it knows 地名 that OSM lacks. Requests are cancellable, so fast typing doesn't pile them up.
+ * Nominatim allows one request a second and no search-as-you-type, so it is only used for the pin's reverse
+ * lookup, behind a throttle. Any service may fail; callers then show fewer details.
  */
 import { PLACE_API } from "./config.js";
 
@@ -76,8 +77,10 @@ async function nominatimGet(url, stillWanted = () => true) {
 }
 
 async function nominatim(lat, lon, stillWanted) {
-  const base = PLACE_API.nominatim.replace(/\/search$/, "/reverse");
-  const d = await nominatimGet(`${base}?format=jsonv2&lat=${lat.toFixed(5)}&lon=${lon.toFixed(5)}&zoom=16&accept-language=en`, stillWanted);
+  const d = await nominatimGet(
+    `${PLACE_API.nominatim}?format=jsonv2&lat=${lat.toFixed(5)}&lon=${lon.toFixed(5)}&zoom=16&accept-language=en`,
+    stillWanted,
+  );
   return d.error ? null : d.address || null;
 }
 
@@ -89,50 +92,62 @@ const hasJapanese = (q) =>
   });
 
 /**
- * Places in Japan matching the text q: [{ name, detail, lat, lon }], best first (at most PLACE_API.searchLimit).
- * Throws if neither service could be reached.
+ * Places in Japan matching q: [{ name, detail, lat, lon }], best first, at most PLACE_API.searchLimit.
+ * `signal` (an AbortSignal) cancels the requests. Throws if no service could be reached.
  */
-export async function searchPlaces(q) {
+export async function searchPlaces(q, signal) {
   q = q.trim();
   if (!q) return [];
-  const order = hasJapanese(q) ? [gsiSearch, osmSearch] : [osmSearch, gsiSearch];
-  let reached = false;
-  for (const find of order) {
-    try {
-      const found = await find(q);
-      reached = true;
-      if (found.length) return found.slice(0, PLACE_API.searchLimit);
-    } catch (err) {
-      console.warn("Place search:", err);
-    }
-  }
-  if (!reached) throw new Error("Place search is unavailable");
-  return [];
-}
-
-async function gsiSearch(q) {
-  const r = await fetch(`${PLACE_API.gsiSearch}?q=${encodeURIComponent(q)}`);
-  if (!r.ok) throw new Error(`GSI search ${r.status}`);
-  return (await r.json()).map((f) => ({
-    name: f.properties.title,
-    detail: "",
-    lon: f.geometry.coordinates[0],
-    lat: f.geometry.coordinates[1],
-  }));
-}
-
-async function osmSearch(q) {
-  const base = PLACE_API.nominatim.replace(/\/reverse$/, "/search");
-  const d = await nominatimGet(
-    `${base}?format=jsonv2&countrycodes=jp&accept-language=en&limit=${PLACE_API.searchLimit}&q=${encodeURIComponent(q)}`,
+  const asks = [photonSearch(q, signal)];
+  if (hasJapanese(q)) asks.push(gsiSearch(q, signal));
+  const res = await Promise.allSettled(asks);
+  if (signal?.aborted) throw new DOMException("aborted", "AbortError");
+  if (res.every((r) => r.status === "rejected")) throw res[0].reason;
+  const all = res.flatMap((r) => (r.status === "fulfilled" ? r.value : []));
+  // The same place often appears more than once (a station and its bus stops, OSM and GSI): keep the first within ~1 km.
+  const out = all.filter(
+    (x, k) => !all.slice(0, k).some((y) => y.name === x.name && Math.abs(y.lat - x.lat) + Math.abs(y.lon - x.lon) < 0.015),
   );
-  const out = d.map((x) => {
-    // display_name runs from the place itself out to the country; keep the last three named levels as context.
-    const parts = x.display_name.split(", ").filter((p) => p !== "Japan" && !/^\d{3}-?\d{4}$/.test(p));
-    return { name: x.name || parts[0], detail: parts.slice(1).slice(-3).join(", "), lat: Number(x.lat), lon: Number(x.lon) };
-  });
-  // OSM often has several objects for one place (a station and its bus stop): keep the first within ~1 km.
-  return out.filter((x, k) => !out.slice(0, k).some((y) => y.name === x.name && Math.abs(y.lat - x.lat) + Math.abs(y.lon - x.lon) < 0.015));
+  return out.slice(0, PLACE_API.searchLimit);
+}
+
+async function gsiSearch(q, signal) {
+  const r = await fetch(`${PLACE_API.gsiSearch}?q=${encodeURIComponent(q)}`, { signal });
+  if (!r.ok) throw new Error(`GSI search ${r.status}`);
+  return (await r.json())
+    .slice(0, 5)
+    .map((f) => ({ name: f.properties.title, detail: "", lon: f.geometry.coordinates[0], lat: f.geometry.coordinates[1] }));
+}
+
+/** Readable feature types; roads and paths are left out (they rarely are what someone searches for). */
+const SKIP_KEYS = new Set(["highway", "railway", "route", "power", "waterway"]);
+
+async function photonSearch(q, signal) {
+  const [w, s, e, n] = PLACE_API.japanBox;
+  const url = `${PLACE_API.photon}?q=${encodeURIComponent(q)}&lang=en&limit=12&bbox=${w},${s},${e},${n}`;
+  const r = await fetch(url, { signal });
+  if (!r.ok) throw new Error(`Photon ${r.status}`);
+  // Photon matches loosely ("Nobey" also finds a pub called "Nobby"); for Latin text keep names containing it.
+  const fold = (t) =>
+    t
+      .normalize("NFD")
+      .replace(/\p{M}/gu, "") // drop accents: "Mashū" matches "mashu"
+      .toLowerCase();
+  const strict = !hasJapanese(q);
+  return (await r.json()).features
+    .filter((f) => f.properties.countrycode === "JP" && f.properties.name && !SKIP_KEYS.has(f.properties.osm_key))
+    .filter((f) => !strict || fold(f.properties.name).includes(fold(q)))
+    .map((f) => {
+      const p = f.properties;
+      const where = [p.city || p.county || p.locality || p.district, (p.state || "").replace(/ Prefecture$/, "")].filter(Boolean);
+      const kind = (p.osm_value || "").replace(/_/g, " ");
+      return {
+        name: p.name,
+        detail: [kind && kind !== "yes" ? kind : "", where.filter((x, k) => where.indexOf(x) === k).join(", ")].filter(Boolean).join(" · "),
+        lon: f.geometry.coordinates[0],
+        lat: f.geometry.coordinates[1],
+      };
+    });
 }
 
 /** { local, area }: local = the most specific name, area = the English hierarchy above it. */

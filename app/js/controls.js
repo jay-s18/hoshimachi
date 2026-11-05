@@ -128,6 +128,12 @@ export function initControls() {
 
   initDates();
 
+  const lf = document.getElementById("liveFc");
+  lf.checked = state.live;
+  lf.onchange = () => {
+    state.live = lf.checked;
+    schedule();
+  };
   document.getElementById("showSpots").checked = state.spots;
   document.getElementById("showSpots").onchange = (e) => {
     state.spots = e.target.checked;

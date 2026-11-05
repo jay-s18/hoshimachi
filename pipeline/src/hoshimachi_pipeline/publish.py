@@ -26,6 +26,7 @@ FILES = {
     "nightMasks": ("night-masks.u16.gz", "uint16 little-endian, nights × cells, gzip"),
     "skyBrightness": ("sky-brightness.u8.gz", "uint8 SQM code per pixel, rows × cols, gzip"),
     "radiance": ("radiance.u8.gz", "uint8 log radiance code per pixel, rows × cols, gzip"),
+    "lightTrend": ("light-trend.u8.gz", "uint8 trend code (% per decade + trendOffset; 255 = none), rows × cols, gzip"),
     "bortleOverlay": ("bortle.png", "Sky brightness overlay on the Bortle colour ramp, Web Mercator rows"),
     "trendOverlay": ("trend.png", "Light-trend overlay, Web Mercator rows"),
 }
@@ -103,7 +104,7 @@ def check(out_dir: Path) -> list[str]:
         if len(masks) != 2 * period["nights"] * len(cells):
             problems.append("nightMasks size != 2 bytes × nights × cells")
         g = manifest["pixelGrid"]
-        for key in ("skyBrightness", "radiance"):
+        for key in ("skyBrightness", "radiance", "lightTrend"):
             n = len(gzip.decompress((out_dir / manifest["files"][key]["path"]).read_bytes()))
             if n != g["rows"] * g["cols"]:
                 problems.append(f"{key} size != rows × cols")

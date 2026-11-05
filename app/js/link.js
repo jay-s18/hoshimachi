@@ -16,6 +16,7 @@ const oneOf =
   (...vals) =>
   (v) =>
     vals.includes(v) ? v : undefined;
+const bool = (v) => (v === "0" ? false : v === "1" ? true : undefined);
 const int = (lo, hi) => (v) => {
   const n = Number(v);
   return Number.isInteger(n) && n >= lo && n <= hi ? n : undefined;
@@ -31,7 +32,8 @@ const FIELDS = [
   ["r", "rule", oneOf("run", "any")],
   ["l", "layer", oneOf("trip", "month", "dark", "trend")],
   ["map", "base", oneOf("plain", "roads", "terrain")],
-  ["spots", "spots", (v) => (v === "0" ? false : v === "1" ? true : undefined)],
+  ["spots", "spots", bool],
+  ["live", "live", bool],
 ];
 
 let defaults = null;
@@ -67,7 +69,8 @@ export function writeLink() {
   if (!defaults || !state.date) return;
   const parts = [`d=${state.date}`, `to=${state.dateTo}`];
   for (const [param, key] of FIELDS)
-    if (state[key] !== defaults[key]) parts.push(`${param}=${key === "spots" ? (state[key] ? 1 : 0) : encodeURIComponent(state[key])}`);
+    if (state[key] !== defaults[key])
+      parts.push(`${param}=${typeof state[key] === "boolean" ? (state[key] ? 1 : 0) : encodeURIComponent(state[key])}`);
   if (state.sel != null) {
     const c = CELLS[state.sel];
     parts.push(`cell=${c.r}_${c.c}`);

@@ -13,9 +13,14 @@ import { addDays, fmtDate } from "./util.js";
 const VARS = ["cloud_cover", "temperature_2m", "wind_speed_10m", "precipitation", "relative_humidity_2m"];
 const cache = new Map(); // "lat,lon@hour" -> Promise
 
+const keyOf = (lat, lon) => `${lat.toFixed(3)},${lon.toFixed(3)}@${new Date().toISOString().slice(0, 13)}`;
+
+/** Whether the forecast for [lat, lon] is already loaded or loading this hour (showing it costs no request). */
+export const pinWeatherCached = (lat, lon) => cache.has(keyOf(lat, lon));
+
 /** Hourly forecast for [lat, lon]: { t0, elevation, cloud_cover: [], temperature_2m: [], … }. Cached for the hour. */
 export function pinWeather(lat, lon) {
-  const key = `${lat.toFixed(3)},${lon.toFixed(3)}@${new Date().toISOString().slice(0, 13)}`;
+  const key = keyOf(lat, lon);
   if (!cache.has(key)) {
     const url = `${FORECAST.url}?latitude=${lat.toFixed(4)}&longitude=${lon.toFixed(4)}&hourly=${VARS.join(",")}&models=${FORECAST.model}&forecast_days=${FORECAST.days + 2}&timezone=GMT`;
     const p = fetch(url)

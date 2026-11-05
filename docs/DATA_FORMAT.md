@@ -25,7 +25,7 @@
   "lightTrend": { "firstYear": 2014, "lastYear": null },   // null if unknown
   "calibration": { "anchor": "Yonago Kosen rooftop", "anchorSqm": 18.8, "g0": 2.15 },
   "overlayBounds": [[south, west], [north, east]],
-  "pixelGrid": { "west", "north", "step", "rows", "cols", "sqmOffset", "sqmScale", "radianceMax", "radianceLevels" },
+  "pixelGrid": { "west", "north", "step", "rows", "cols", "sqmOffset", "sqmScale", "radianceMax", "radianceLevels", "trendOffset" },
   "validation": {                        // null if the build skipped validation
     "tuneYears": [2021, 2022], "testYears": [2023, 2024],
     "predictionsPerTripLength": 724626, "step": 1, "gatePassed": true,
@@ -49,16 +49,17 @@ The app appends the first 12 hex digits of each file's `sha256` as `?v=` when fe
 
 ## Files
 
-| Key             | File                   | Format                                                                                                                                                            |
-| --------------- | ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `cells`         | `cells.json`           | Array of region objects, below. Order defines the cell index everywhere else.                                                                                     |
-| `prefectures`   | `prefectures.geojson`  | FeatureCollection of prefecture outlines, coordinates rounded to 0.001°.                                                                                          |
-| `lightSources`  | `light-sources.json`   | `[lat, lon, "English (日本語)", totalRadiance]`, brightest first.                                                                                                 |
-| `nightMasks`    | `night-masks.u16.gz`   | gzip of uint16 little-endian, `nights × cells`, row-major (night-major). Bit _k_ set = hour `firstHourLocal + k` had cloud below `clearCloudBelow`.               |
-| `skyBrightness` | `sky-brightness.u8.gz` | gzip of uint8 `rows × cols`. SQM = `sqmOffset + code / sqmScale`; 255 = sea.                                                                                      |
-| `radiance`      | `radiance.u8.gz`       | gzip of uint8 `rows × cols`. Radiance = `expm1(code / radianceLevels × log1p(radianceMax))` nW/cm²/sr.                                                            |
-| `bortleOverlay` | `bortle.png`           | RGBA, rows resampled to Web Mercator, spans `overlayBounds`. Sky brightness on a continuous ramp: each Bortle colour sits at the middle of its class's SQM range. |
-| `trendOverlay`  | `trend.png`            | Same geometry.                                                                                                                                                    |
+| Key             | File                   | Format                                                                                                                                                                                                                                                                                                                       |
+| --------------- | ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `cells`         | `cells.json`           | Array of region objects, below. Order defines the cell index everywhere else.                                                                                                                                                                                                                                                |
+| `prefectures`   | `prefectures.geojson`  | FeatureCollection of prefecture outlines, coordinates rounded to 0.001°.                                                                                                                                                                                                                                                     |
+| `lightSources`  | `light-sources.json`   | `[lat, lon, "English (日本語)", totalRadiance]`, brightest first.                                                                                                                                                                                                                                                            |
+| `nightMasks`    | `night-masks.u16.gz`   | gzip of uint16 little-endian, `nights × cells`, row-major (night-major). Bit _k_ set = hour `firstHourLocal + k` had cloud below `clearCloudBelow`.                                                                                                                                                                          |
+| `skyBrightness` | `sky-brightness.u8.gz` | gzip of uint8 `rows × cols`. SQM = `sqmOffset + code / sqmScale`; 255 = sea.                                                                                                                                                                                                                                                 |
+| `radiance`      | `radiance.u8.gz`       | gzip of uint8 `rows × cols`. Radiance = `expm1(code / radianceLevels × log1p(radianceMax))` nW/cm²/sr.                                                                                                                                                                                                                       |
+| `lightTrend`    | `light-trend.u8.gz`    | gzip of uint8 `rows × cols`. Night-light trend in % per decade = `code − trendOffset` (clipped to ±127); 255 = no measurable trend (sea, or radiance at or below `[overlays] trend_min_radiance`). Same pixels and thresholds as `trend.png`. Optional for the app: older data without it falls back to reading `trend.png`. |
+| `bortleOverlay` | `bortle.png`           | RGBA, rows resampled to Web Mercator, spans `overlayBounds`. Sky brightness on a continuous ramp: each Bortle colour sits at the middle of its class's SQM range.                                                                                                                                                            |
+| `trendOverlay`  | `trend.png`            | Same geometry.                                                                                                                                                                                                                                                                                                               |
 
 Pixel row _r_, column _c_ covers latitude `north − (r + ½)·step`, longitude `west + (c + ½)·step`.
 

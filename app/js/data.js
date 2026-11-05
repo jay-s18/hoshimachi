@@ -24,6 +24,7 @@ export let SOURCES = []; // named light sources: [lat, lon, "English (日本語)
 export let MASKS = null; // Uint16Array nights × cells: bit k = hour (firstHourLocal + k) was clear
 export let SQMG = null; // Uint8Array pixel grid: sky brightness code (255 = sea)
 export let RADG = null; // Uint8Array pixel grid: log-scaled night-light radiance code
+export let TRENDG = null; // Uint8Array pixel grid: light trend, % per decade + GRID.trendOffset (255 = none); null in older data
 export let GRID = null; // pixel grid geometry
 export let MODEL = null; // validated model settings: { windowDays, ownWeight }
 export let OVERLAY_URLS = null; // { bortle, trend } image URLs
@@ -84,13 +85,14 @@ export async function loadData() {
     throw new Error(`Data schema ${manifest.schemaVersion} is not supported by this app (expects ${SUPPORTED_SCHEMA}).`);
   const f = manifest.files;
 
-  const [cells, prefs, sources, masks, sqm, rad] = await Promise.all([
+  const [cells, prefs, sources, masks, sqm, rad, trend] = await Promise.all([
     fetchOk(f.cells.path, f.cells).then((r) => r.json()),
     fetchOk(f.prefectures.path, f.prefectures).then((r) => r.json()),
     fetchOk(f.lightSources.path, f.lightSources).then((r) => r.json()),
     fetchGzipBytes(f.nightMasks),
     fetchGzipBytes(f.skyBrightness),
     fetchGzipBytes(f.radiance),
+    f.lightTrend ? fetchGzipBytes(f.lightTrend) : null, // optional: data published before it existed lacks it
   ]);
 
   CELLS = cells;
@@ -107,8 +109,19 @@ export async function loadData() {
   if (MASKS.length !== NN * NC) throw new Error(`nightMasks has ${MASKS.length} values, expected ${NN * NC}`);
   SQMG = sqm;
   RADG = rad;
+  TRENDG = trend;
   const g = manifest.pixelGrid;
-  GRID = { w: g.west, n: g.north, step: g.step, H: g.rows, W: g.cols, sqmOffset: g.sqmOffset, sqmScale: g.sqmScale };
+  GRID = {
+    w: g.west,
+    n: g.north,
+    step: g.step,
+    H: g.rows,
+    W: g.cols,
+    sqmOffset: g.sqmOffset,
+    sqmScale: g.sqmScale,
+    trendOffset: g.trendOffset,
+  };
+  if (TRENDG && TRENDG.length !== GRID.H * GRID.W) throw new Error("lightTrend grid size does not match the manifest");
   if (SQMG.length !== GRID.H * GRID.W) throw new Error("skyBrightness grid size does not match the manifest");
   RADLUT = Float64Array.from({ length: 256 }, (_, q) => Math.expm1((q / g.radianceLevels) * Math.log1p(g.radianceMax)));
   MODEL = { windowDays: manifest.model.windowDays, ownWeight: 1 - manifest.model.neighbourWeight };

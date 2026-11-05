@@ -122,6 +122,8 @@ export const PLACE_API = {
   nominatim: "https://nominatim.openstreetmap.org/reverse",
   gsi: "https://mreversegeocoder.gsi.go.jp/reverse-geocoder/LonLatToAddress",
   gsiSearch: "https://msearch.gsi.go.jp/address-search/AddressSearch",
+  photon: "https://photon.komoot.io/api/",
+  japanBox: [122, 24, 146, 46], // west, south, east, north
   minIntervalMs: 1100,
   searchLimit: 8,
 };
@@ -147,9 +149,10 @@ export const FORECAST = {
  * pipeline/src/hoshimachi_pipeline/overlays.py and [overlays] trend_stable / trend_fast in pipeline/config.toml.
  * Used to read the trend at the pin back from the overlay image.
  */
+// Ranges are in % per decade (10 × the pipeline's per-year thresholds), the same unit as a region's `trend`.
 export const TREND_CLASSES = [
-  { rgb: [255, 182, 92], label: "brightening fast", detail: "more than 3% a year" },
-  { rgb: [196, 112, 40], label: "brightening", detail: "1–3% a year" },
-  { rgb: [110, 104, 96], label: "stable", detail: "within ±1% a year" },
-  { rgb: [88, 136, 200], label: "dimming", detail: "more than 1% a year" },
+  { rgb: [255, 182, 92], a: 255, label: "brightening fast", detail: "more than +30% per decade" },
+  { rgb: [196, 112, 40], a: 235, label: "brightening", detail: "+10% to +30% per decade" },
+  { rgb: [110, 104, 96], a: 150, label: "stable", detail: "between −10% and +10% per decade" },
+  { rgb: [88, 136, 200], a: 220, label: "dimming", detail: "more than −10% per decade" },
 ];

@@ -8,7 +8,7 @@
  * and the satellite under-counts white LEDs.
  */
 import { PANO, TREND_CLASSES } from "./config.js";
-import { BOUNDS, GRID, OVERLAY_URLS, RADG, RADLUT, SOURCES, SQMG } from "./data.js";
+import { BOUNDS, GRID, OVERLAY_URLS, RADG, RADLUT, SOURCES, SQMG, TRENDG } from "./data.js";
 import { R2D, dirName, hav } from "./util.js";
 
 /** Pixel [row, col] containing [lat, lon]. */
@@ -272,12 +272,13 @@ const merc = (lat) => Math.log(Math.tan(Math.PI / 4 + lat / R2D / 2));
 /**
  * The light-trend class of the ~1 km pixel at [lat, lon], as drawn on the Light trend layer:
  * one of TREND_CLASSES, or null where the satellite sees too little light to measure a trend.
- * The overlay's rows are evenly spaced in Web Mercator (pipeline overlays.mercator_rows).
+ * Fallback for data without the per-pixel trend grid. The overlay's rows are evenly spaced in Web Mercator
+ * (pipeline overlays.mercator_rows), so it can be about one pixel off near colour edges.
  */
 export async function trendAt(lat, lon) {
   const { data, w, h } = await trendPixels();
   const [[south, west], [north, east]] = BOUNDS;
-  const row = Math.round(((merc(north) - merc(lat)) / (merc(north) - merc(south))) * (h - 1));
+  const row = Math.floor(((merc(north) - merc(lat)) / (merc(north) - merc(south))) * h); // as Leaflet draws it
   const col = Math.floor(((lon - west) / (east - west)) * w);
   if (row < 0 || col < 0 || row >= h || col >= w) return null;
   const i = (row * w + col) * 4;
@@ -289,4 +290,22 @@ export async function trendAt(lat, lon) {
     if (d < bestD) [best, bestD] = [t, d];
   }
   return best;
+}
+
+/**
+ * Light trend of the ~1 km pixel at [lat, lon] in % per decade (clipped to ±127), or null where the satellite
+ * sees too little light to measure one. undefined if the data has no per-pixel trend grid (older data).
+ */
+export function trendPctAt(lat, lon) {
+  if (!TRENDG) return undefined;
+  const [r, c] = gridRC(lat, lon);
+  if (r < 0 || c < 0 || r >= GRID.H || c >= GRID.W) return null;
+  const q = TRENDG[r * GRID.W + c];
+  return q === 255 ? null : q - GRID.trendOffset;
+}
+
+/** The TREND_CLASSES entry for a trend in % per decade, with the overlay's thresholds (±10 %, +30 %). */
+export function trendClassOf(pct) {
+  const label = pct > 30 ? "brightening fast" : pct > 10 ? "brightening" : pct >= -10 ? "stable" : "dimming";
+  return TREND_CLASSES.find((t) => t.label === label);
 }

@@ -36,21 +36,7 @@
           <path d="M22.5 5.2 L23.4 9.1 L27.3 10 L23.4 10.9 L22.5 14.8 L21.6 10.9 L17.7 10 L21.6 9.1 Z" fill="#d4a656" /></svg
         ><span class="kanji">星待ち</span>
       </div>
-      <div class="psearch" role="search">
-        <input
-          id="placeSearch"
-          type="search"
-          placeholder="Search a place in Japan: Nobeyama, 摩周湖, Mount Fuji…"
-          autocomplete="off"
-          role="combobox"
-          aria-autocomplete="list"
-          aria-expanded="false"
-          aria-controls="placeList"
-          aria-label="Search a place in Japan"
-        />
-        <ul id="placeList" role="listbox" hidden></ul>
-        <div id="placeStatus" class="ps-status" role="status" aria-live="polite"></div>
-      </div>
+      <div class="spacer"></div>
       <button class="hbtn" id="shareBtn" type="button" title="Copy a link to this exact view: dates, settings and pinned spot">
         Share
       </button>
@@ -112,6 +98,20 @@
             </button>
           </div>
           <div class="moonline" id="moonline"></div>
+        </div>
+        <div class="grp">
+          <div class="lblrow">
+            <span class="lbl">Live forecast</span
+            ><button
+              type="button"
+              class="ib"
+              aria-label="About: Live forecast"
+              data-tip="For trips starting within 7 days, blend today&#x27;s Japan Meteorological Agency cloud forecast into the odds. It uses a free weather service with a limit shared by everyone on the same network, so it is off by default. Each spot&#x27;s own forecast can still be loaded from its card."
+            >
+              i
+            </button>
+          </div>
+          <label class="row" style="font-size: 13px"><input type="checkbox" id="liveFc" /> Use the live forecast in the odds</label>
         </div>
         <div class="grp">
           <div class="lblrow">
@@ -189,6 +189,27 @@
 
       <div class="mapwrap">
         <div id="map" role="application" aria-label="Map of Japan"></div>
+        <div class="msearch" role="search">
+          <svg class="msearch-icon" width="15" height="15" viewBox="0 0 24 24" aria-hidden="true">
+            <path
+              d="M10 3a7 7 0 1 0 4.2 12.6l5.1 5.1 1.4-1.4-5.1-5.1A7 7 0 0 0 10 3zm0 2a5 5 0 1 1 0 10 5 5 0 0 1 0-10z"
+              fill="currentColor"
+            />
+          </svg>
+          <input
+            id="placeSearch"
+            type="search"
+            placeholder="Search a place: Nobeyama, 摩周湖, Mount Fuji…"
+            autocomplete="off"
+            spellcheck="false"
+            role="combobox"
+            aria-autocomplete="list"
+            aria-expanded="false"
+            aria-controls="placeList"
+            aria-label="Search a place in Japan"
+          />
+          <ul id="placeList" role="listbox" aria-label="Matching places" hidden></ul>
+        </div>
         <div class="seg layers" id="layer">
           <button type="button" data-v="trip" class="on">Trip odds</button><button type="button" data-v="month">Month odds</button
           ><button type="button" data-v="dark">Darkness</button><button type="button" data-v="trend">Light trend</button>
@@ -313,7 +334,7 @@
           </li>
           <li>
             Place names for the pin: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>
-            contributors (Nominatim) and GSI reverse geocoder and address search (国土地理院).
+            contributors (Nominatim, Photon by Komoot) and GSI reverse geocoder and address search (国土地理院).
           </li>
         </ul>
         <p class="hint">

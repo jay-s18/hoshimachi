@@ -12,7 +12,7 @@ from PIL import Image
 from rasterio.transform import from_origin
 
 from hoshimachi_pipeline.config import load_config
-from hoshimachi_pipeline.grids import radiance_codes, sqm_codes
+from hoshimachi_pipeline.grids import radiance_codes, sqm_codes, trend_codes
 from hoshimachi_pipeline.inputs import InputError, load_clouds
 from hoshimachi_pipeline.overlays import BORTLE_COLORS, _hex, bortle_png, bortle_ramp_sqm
 from hoshimachi_pipeline.publish import FILES, check, publish
@@ -109,10 +109,21 @@ def test_grid_codes_round_trip(cfg):
     assert code[0] == 0 and abs(back[2] - 500) < 1 and abs(back[1] - 1) < 0.05
 
 
+def test_trend_codes(cfg):
+    off = cfg.grids.trend_offset
+    rad = np.array([[10.0, 10.0, 10.0, 0.1, 10.0, 10.0]])
+    slope = np.array([[0.2, -0.15, 0.0, 0.05, 5.0, 0.2]])  # +20 %, −15 %, 0 % per decade; too dark; +500 %; sea
+    land = np.array([[True, True, True, True, True, False]])
+    q = trend_codes(cfg, rad, slope, land)
+    assert q[0, :3].tolist() == [off + 20, off - 15, off]
+    assert q[0, 3] == 255 and q[0, 5] == 255  # unmeasurable and sea: no trend, as on the overlay
+    assert q[0, 4] == 254  # clipped at +127 %
+
+
 def test_publish_then_check(cfg):
     payloads = {k: {"k": k} for k in FILES}
     payloads["nightMasks"] = np.zeros((3, 1), "<u2").tobytes()
-    payloads["skyBrightness"] = payloads["radiance"] = bytes(4)
+    payloads["skyBrightness"] = payloads["radiance"] = payloads["lightTrend"] = bytes(4)
     payloads["cells"] = [{"r": 0, "c": 0}]
     m = publish(cfg.paths.app_data_dir, payloads, {"period": {"nights": 3}, "pixelGrid": {"rows": 2, "cols": 2}})
     assert m["files"]["nightMasks"]["path"].endswith(".gz")

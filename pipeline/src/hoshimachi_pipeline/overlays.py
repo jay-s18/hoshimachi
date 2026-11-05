@@ -24,13 +24,18 @@ def _hex(c: str) -> tuple[int, int, int]:
 
 
 def mercator_rows(cfg: Config, transform, height: int) -> np.ndarray:
-    """Source row for each output row so that output rows are evenly spaced in Web Mercator."""
+    """Source row for each output row so that output rows are evenly spaced in Web Mercator.
+
+    Leaflet stretches the image linearly in Mercator between the bounds, so output row i covers the i-th of
+    `mercator_rows` equal Mercator bands; it is sampled at the band's centre.
+    """
 
     def merc(lat):
         return np.log(np.tan(np.pi / 4 + np.radians(lat) / 2))
 
     top, bottom = transform.f, transform.f + height * transform.e
-    ys = np.linspace(merc(top), merc(bottom), cfg.overlays.mercator_rows)
+    n = cfg.overlays.mercator_rows
+    ys = merc(top) + (np.arange(n) + 0.5) * (merc(bottom) - merc(top)) / n
     lats = np.degrees(2 * np.arctan(np.exp(ys)) - np.pi / 2)
     return np.clip(((lats - transform.f) / transform.e).astype(int), 0, height - 1)
 

@@ -7,13 +7,13 @@ import { state, ymd, monthOf } from "./state.js";
 import { addDays, daysFromToday, esc, fmtDate, ib, pct } from "./util.js";
 import { bortleOf, hoursLabel, moonIcon, moonInfo, moonName } from "./astro.js";
 import { monthSeries } from "./odds.js";
-import { drawPanorama, horizonProfile, spotInfo, trendAt } from "./sky.js";
+import { drawPanorama, horizonProfile, spotInfo, trendAt, trendClassOf, trendPctAt } from "./sky.js";
 import { results, distOf } from "./app.js";
 import { clearSelection, select } from "./map.js";
 import { cachedPlace, lookupPlace } from "./place.js";
 import { forecastStatus, tripInRange } from "./forecast.js";
 import { writeLink } from "./link.js";
-import { pinWeather, weatherHtml } from "./weather.js";
+import { pinWeather, pinWeatherCached, weatherHtml } from "./weather.js";
 
 const rangeTxt = (r) => `${pct(r.lo)}–${pct(r.hi)}`;
 
@@ -29,7 +29,11 @@ function notices() {
     dt = daysFromToday(d),
     lastYear = YEARS[YEARS.length - 1],
     out = [];
-  if (tripInRange(d, state.nights)) {
+  if (tripInRange(d, state.nights) && !state.live)
+    out.push(
+      `Your trip starts within a week. Tick <b>Use the live forecast in the odds</b> (left) to blend today's cloud forecast into these historical odds, or check each region's own forecast in its card.`,
+    );
+  else if (tripInRange(d, state.nights)) {
     const st = forecastStatus();
     if (st === "ready")
       out.push(
@@ -167,7 +171,17 @@ function pinReading(sp) {
 function trendText(c) {
   if (c.trend == null) return "Whole region (~28 km): too little artificial light for the satellite to measure a trend.";
   const col = c.trend > 3 ? "var(--warn)" : "var(--ink)";
-  return `Whole region (~28 km), all its lights together: <b class="num" style="color:${col}">${c.trend > 0 ? "+" : ""}${c.trend}% per decade</b>`;
+  return `Whole region (~28 km square), all its lights together: <b class="num" style="color:${col}">${c.trend > 0 ? "+" : ""}${c.trend}% per decade</b>`;
+}
+
+/** Trend line for the pin, e.g. "+18% per decade · brightening", with the map's colour for that class. */
+function trendLine(t, pct) {
+  const sw = (rgb) => `<i class="sw" style="background:${rgb ? `rgb(${rgb.join(",")})` : "transparent;border:1px solid var(--rule)"}"></i>`;
+  if (!t && (pct === null || pct === undefined))
+    return `${sw(null)}<span>At the pin (~1 km): too little artificial light to measure a trend, a good sign for darkness</span>`;
+  if (pct === null || pct === undefined) return `${sw(t.rgb)}<span>At the pin (~1 km): <b>${t.label}</b>, ${t.detail}</span>`;
+  const txt = Math.abs(pct) >= 127 ? `more than ${pct > 0 ? "+" : "−"}127%` : `${pct > 0 ? "+" : pct < 0 ? "−" : "±"}${Math.abs(pct)}%`;
+  return `${sw(t.rgb)}<span>At the pin (~1 km): <b class="num">${txt} per decade</b> · ${t.label}</span>`;
 }
 
 /** The pinned spot's place name: undefined = still looking up, null = not found. */
@@ -213,7 +227,7 @@ function renderCard(el, i) {
     ${
       sp.sqm === null
         ? ""
-        : `<div class="sect"><h4>Live forecast at the pin${ib(`Japan Meteorological Agency forecast for the next ${FORECAST.days + 1} nights at the pinned spot, hour by hour from 18:00 to 05:00. Outlined hours are usable: astronomically dark, with the moon down or under 25% lit. A night counts as good when its clear usable hours meet your "good night needs" setting.`, "Live forecast")}</h4><div id="wxBox"><div class="hint">Loading the forecast…</div></div></div>`
+        : `<div class="sect"><h4>Live forecast at the pin${ib(`Japan Meteorological Agency forecast for the next ${FORECAST.days + 1} nights at the pinned spot, hour by hour from 18:00 to 05:00. Outlined hours are usable: astronomically dark, with the moon down or under 25% lit. A night counts as good when its clear usable hours meet your "good night needs" setting.`, "Live forecast")}</h4><div id="wxBox"></div></div>`
     }
     <div class="sect"><h4>Sky from the pin${ib("An approximate picture of the whole sky from the pin: horizon at the bottom, zenith at the top, all the way round. Glow falls with distance squared and haze, so a big city far away can look fainter than a village nearby, and distant domes sit lower. The sky is brightest near the horizon because you look through more air there (about 4× the zenith). Stars fade where the glow is strong. Hills that would hide a town are not modelled, and white LEDs are under-counted. An illustration, not a measurement.", "Sky from the pin")}</h4>
       <canvas id="pano" class="pano" role="img" aria-label="Simulated horizon glow around the pin"></canvas>
@@ -238,7 +252,7 @@ function renderCard(el, i) {
       <div class="years">${r.luck.map((v, k) => `<div class="yr"><i class="${v ? "y" : ""}${v === null ? " x" : ""}" title="${YEARS[k]}: ${v === null ? "not used" : v ? "at least one good night" : "no good night"}"></i>${String(YEARS[k]).slice(2)}</div>`).join("")}</div>
       <div class="hint" style="margin-top:4px">Filled = at least one good night on these dates that year.</div></div>
     <div class="sect"><h4>Best months here${ib("Share of all nights in each month with a good clear window, using your hours setting. The moon is not counted, so pick new-moon dates within the best months.", "Best months")}</h4>${mc.svg}<div class="hint">Best: ${MONTHS[mc.best]} (${pct(mc.vals[mc.best])})</div></div>
-    <div class="sect"><h4>Is the sky here changing?${ib(`Change in satellite-measured night light in this region${trendSince}. The satellite under-sees blue-white LEDs, so real brightening is likely worse than shown.`, "Light trend")}</h4><div class="hint" id="trendPin">${sp.sqm === null ? "" : "Reading the trend at the pin…"}</div><div class="hint" style="margin-top:4px">${trendText(c)}</div></div>
+    <div class="sect"><h4>Is the sky here changing?${ib(`Change in satellite-measured night light${trendSince}. At the pin it is the class of the ~1 km pixel, as coloured on the Light trend layer: the published data has exact percentages only for whole regions. The satellite under-sees blue-white LEDs, so real brightening is likely worse than shown.`, "Light trend")}</h4><div class="trend-pin" id="trendPin">${sp.sqm === null ? "" : "Reading the trend at the pin…"}</div><div class="hint" style="margin-top:4px">${trendText(c)}</div></div>
     <div class="sect"><h4>Towns in this region</h4><div class="towns">${c.also
       .map((a) => {
         const [e, j] = a.split("|");
@@ -265,30 +279,39 @@ function renderCard(el, i) {
 
   if (sp.sqm !== null) {
     const [wlat, wlon] = state.pin;
-    pinWeather(sp.lat, sp.lon)
-      .then((w) => {
-        const box = document.getElementById("wxBox");
-        if (box && state.pin && state.pin[0] === wlat && state.pin[1] === wlon) box.innerHTML = weatherHtml(w, sp.lat, sp.lon);
-      })
-      .catch(() => {
-        const box = document.getElementById("wxBox");
-        if (box) box.innerHTML = `<div class="hint">The live forecast couldn't load (offline or blocked). Try "Live clouds" above.</div>`;
-      });
+    const box = document.getElementById("wxBox");
+    const load = () => {
+      box.innerHTML = `<div class="hint">Loading the forecast…</div>`;
+      pinWeather(sp.lat, sp.lon)
+        .then((w) => {
+          if (box.isConnected && state.pin && state.pin[0] === wlat && state.pin[1] === wlon)
+            box.innerHTML = weatherHtml(w, sp.lat, sp.lon);
+        })
+        .catch(() => {
+          if (box.isConnected)
+            box.innerHTML = `<div class="hint">The live forecast couldn't load (offline, blocked or over the free limit). Try "Live clouds" above.</div>`;
+        });
+    };
+    // Only ask the free weather service when the user wants it: automatically with the live forecast on,
+    // otherwise one tap per spot.
+    if (state.live || pinWeatherCached(sp.lat, sp.lon)) load();
+    else {
+      box.innerHTML = `<button type="button" class="act wide" id="wxLoad">Show the next ${FORECAST.days + 1} nights' forecast here</button>`;
+      document.getElementById("wxLoad").onclick = load;
+    }
   }
 
-  if (sp.sqm !== null)
-    trendAt(sp.lat, sp.lon)
-      .then((t) => {
-        const box = document.getElementById("trendPin");
-        if (!box) return;
-        box.innerHTML = t
-          ? `At the pin (~1 km): <b style="color:rgb(${t.rgb.join(",")})">${t.label}</b>, ${t.detail}.`
-          : "At the pin (~1 km): too little artificial light for the satellite to measure a trend, a good sign for darkness.";
-      })
-      .catch(() => {
-        const box = document.getElementById("trendPin");
-        if (box) box.textContent = "";
-      });
+  if (sp.sqm !== null) {
+    // Exact % for the pixel under the pin when the data has the per-pixel grid; its class (and colour) then
+    // comes from the same number. Older data only has the overlay image, read back as a class.
+    const pct = trendPctAt(sp.lat, sp.lon);
+    const box = document.getElementById("trendPin");
+    if (pct !== undefined) box.innerHTML = trendLine(pct === null ? null : trendClassOf(pct), pct);
+    else
+      trendAt(sp.lat, sp.lon)
+        .then((t) => box.isConnected && (box.innerHTML = trendLine(t, undefined)))
+        .catch(() => (box.textContent = ""));
+  }
 
   if (sp.sqm !== null && cachedPlace(sp.lat, sp.lon) === undefined) {
     const [plat, plon] = state.pin;

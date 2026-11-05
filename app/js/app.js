@@ -42,10 +42,9 @@ export function recompute() {
     k = state.nights,
     excl = excludedYears(d, k);
   const blended = blendAll(CELLS.map((_, i) => tripRaw(i, d, k, opt, excl)));
-  // Trips starting within a week also use the live cloud forecast; it loads in the background and
-  // triggers another recompute when it arrives.
-  const live = tripInRange(d, k);
-  if (live) {
+  // With "use the live forecast" on, trips starting within a week blend in the cloud forecast; it loads in
+  // the background and triggers another recompute when it arrives. Off by default: a free API with a shared limit.
+  if (state.live && tripInRange(d, k)) {
     ensureForecast(schedule);
     blended.forEach((r, i) => applyForecast(r, i));
   }

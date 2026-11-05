@@ -74,6 +74,7 @@ sqm_scale = 20.0
 sqm_code_max = 140
 radiance_max = 500.0           # code = log1p(rad) / log1p(max) * levels
 radiance_levels = 254
+trend_offset = 127             # light trend: code = round(% per decade) + offset, clipped to 0..254; 255 = no trend
 light_source_min_radiance = 5.0
 
 [names]
