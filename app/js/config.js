@@ -93,8 +93,6 @@ export const BASE_TILES = {
   ],
   terrain: [{ url: "https://cyberjapandata.gsi.go.jp/xyz/hillshademap/{z}/{x}/{y}.png", maxNativeZoom: 16 }],
 };
-/** Base map shown once remote tiles are known to load; "plain" (no tiles) is the fallback when they can't. */
-export const DEFAULT_BASE = "roads";
 /** A single tile used to check whether remote tiles can load (some embedded viewers block them). */
 export const TILE_PROBE = "https://cyberjapandata.gsi.go.jp/xyz/pale/5/28/12.png";
 

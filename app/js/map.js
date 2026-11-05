@@ -1,7 +1,7 @@
 /**
  * The Leaflet map: base layers, region squares, raster overlays, legend, selection and pin.
  */
-import { BASE_TILES, BORTLE_COLORS, DEFAULT_BASE, GSI_ATTR, MONTHS, ODDS_STOPS, SPOTS, TILE_PROBE } from "./config.js";
+import { BASE_TILES, BORTLE_COLORS, GSI_ATTR, MONTHS, ODDS_STOPS, SPOTS, TILE_PROBE } from "./config.js";
 import { BOUNDS, CELLS, OVERLAY_URLS, PREFS } from "./data.js";
 import { state, monthOf } from "./state.js";
 import { ib, pct } from "./util.js";
@@ -12,7 +12,8 @@ let map, landFill, ovB, ovT, rects, spotLayer, selR, BASES;
 let selMarker = null,
   pinMarker = null,
   tilesOK = null, // null = still checking, true/false = remote tiles can / cannot load
-  basePicked = false; // the user chose a base map, so don't switch to the default when tiles turn out to load
+  basePicked = false, // the user chose a base map, so never switch it automatically
+  startBase; // the base map the page opens with (state.base at start-up)
 
 export function initMap() {
   map = L.map("map", { zoomControl: true, attributionControl: false, minZoom: 4, maxZoom: 15, zoomSnap: 0.5, preferCanvas: true });
@@ -47,6 +48,8 @@ export function initMap() {
       ),
     ]),
   );
+  startBase = state.base;
+  applyBase(startBase); // show Roads straight away; probeTiles() falls back to Plain only if tiles can't load
   probeTiles();
 
   ovB = L.imageOverlay(OVERLAY_URLS.bortle, BOUNDS, { opacity: 0.95, interactive: false, pane: "rasters" });
@@ -99,20 +102,22 @@ function cellAt(lat, lon) {
   return CELLS.findIndex((c) => Math.abs(lat - c.lat) <= 0.125 && Math.abs(lon - c.lon) <= 0.125);
 }
 
-/** Check once whether remote base-map tiles can load here; disable the Roads/Terrain buttons if not. */
+/**
+ * Check whether remote base-map tiles can load here. If they can't, fall back to Plain and disable Roads/Terrain.
+ * A slow connection may time out and then succeed: the late success restores the starting base map.
+ */
 function probeTiles() {
   const im = new Image();
   const done = (ok) => {
-    if (tilesOK === null) {
-      tilesOK = ok;
-      if (ok && !basePicked) applyBase(DEFAULT_BASE);
-      else baseUI();
-    }
+    if (tilesOK === true || (tilesOK === false && !ok)) return;
+    tilesOK = ok;
+    if (!basePicked) applyBase(ok ? startBase : "plain");
+    else baseUI();
   };
   im.onload = () => done(true);
   im.onerror = () => done(false);
   im.src = TILE_PROBE;
-  setTimeout(() => done(false), 6000);
+  setTimeout(() => done(false), 8000);
 }
 
 export function oddsColor(p) {
@@ -175,14 +180,10 @@ function wireOpacity() {
 
 export function baseUI() {
   document.querySelectorAll("#baseSeg button").forEach((b) => {
-    const off = b.dataset.v !== "plain" && tilesOK !== true;
+    const off = b.dataset.v !== "plain" && tilesOK === false;
     b.disabled = off;
     b.classList.toggle("on", b.dataset.v === state.base);
-    b.title = off
-      ? tilesOK === null
-        ? "Checking map tiles…"
-        : "Road and terrain maps could not load here (the page may be embedded in a viewer that blocks them)."
-      : "";
+    b.title = off ? "Road and terrain maps could not load here (the page may be embedded in a viewer that blocks them)." : "";
   });
 }
 

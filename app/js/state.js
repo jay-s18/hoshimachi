@@ -13,7 +13,7 @@ export const state = {
   hours: 3, // clear, dark hours needed for a good night
   rule: "run", // "run" = in a row, "any" = passing clouds OK
   layer: "trip", // map layer: "trip" | "month" | "dark" | "trend"
-  base: "plain", // base map: "plain" | "roads" | "terrain"
+  base: "roads", // base map: "plain" | "roads" | "terrain"; falls back to "plain" if map tiles cannot load
   opOdds: 0.6, // overlay opacity for the odds layers
   opRaster: 0.9, // overlay opacity for the darkness / trend rasters
   spots: true, // show spot markers
