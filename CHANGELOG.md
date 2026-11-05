@@ -4,6 +4,8 @@ All notable changes to this project. Data releases are listed with the period th
 
 ## [Unreleased]
 
+- Japanese language: an English / 日本語 button in the header switches every label, note, tooltip, legend and the How it works dialog; place names show in Japanese first. Opens in Japanese for Japanese browsers, remembers the choice, and shared links keep it (`lang=ja`).
+- "What you'll see here" in each region card: for the pin's Bortle class, roughly how many stars are visible at once and how the Milky Way looks, with an illustrated sky; tap 1–9 to compare classes.
 - Exact light trend per ~1 km pixel: the pipeline publishes `light-trend.u8.gz` (% per decade), generated for the current data from the same VIIRS export (verified to reproduce `trend.png` and every region's trend exactly). The region card shows the pin's own % ("−13% per decade · dimming") as well as the region's.
 - The Light trend layer is drawn in the browser from that grid, so the map's colour and the card always describe the same pixel (the pre-rendered image matched only ~86% of the time near colour edges).
 - Map overlays are sampled at the centre of each Web Mercator row, as Leaflet draws them (previously up to one pixel off); `bortle.png` and `trend.png` regenerated.

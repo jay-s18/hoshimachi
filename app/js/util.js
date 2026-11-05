@@ -1,5 +1,6 @@
 /** Small, dependency-free helpers shared by several modules. */
 import { DIRS, MONTHS } from "./config.js";
+import { isJa, t } from "./i18n.js";
 
 export const R2D = 180 / Math.PI;
 
@@ -35,7 +36,7 @@ export function bearing(a, b) {
 }
 
 export function dirName(deg) {
-  return DIRS[Math.round(deg / 45) % 8];
+  return DIRS[Math.round(deg / 45) % 8]; // an English code (N, NE, …); translate with t() for display
 }
 
 export const isLeap = (y) => (y % 4 === 0 && y % 100 !== 0) || y % 400 === 0;
@@ -52,10 +53,13 @@ export function isoAdd(iso, k) {
   return new Date(Date.UTC(y, m - 1, d + k)).toISOString().slice(0, 10);
 }
 
-/** [y, m, d] -> "Jan 7". */
-export function fmtDate(t) {
-  return `${MONTHS[t[1] - 1]} ${t[2]}`;
+/** [y, m, d] -> "Jan 7" (English) or "1月7日" (Japanese). */
+export function fmtDate(d) {
+  return isJa() ? `${d[1]}月${d[2]}日` : `${MONTHS[d[1] - 1]} ${d[2]}`;
 }
+
+/** Short month name for month m (0..11): "Jan" or "1月". */
+export const monthName = (m) => (isJa() ? `${m + 1}月` : MONTHS[m]);
 
 /** Whole days from today (local date) to [y, m, d]; negative if in the past. */
 export function daysFromToday(ymd) {
@@ -66,5 +70,5 @@ export function daysFromToday(ymd) {
 
 /** An "i" button whose text shows as a tooltip (see the tooltip handlers in controls.js). */
 export function ib(text, label) {
-  return `<button type="button" class="ib" aria-label="About: ${esc(label)}" data-tip="${esc(text)}">i</button>`;
+  return `<button type="button" class="ib" aria-label="${esc(t("About: {x}", { x: label }))}" data-tip="${esc(text)}">i</button>`;
 }

@@ -8,6 +8,7 @@
 import { SPOTS } from "./config.js";
 import { CELLS } from "./data.js";
 import { esc } from "./util.js";
+import { nm, nm2, t } from "./i18n.js";
 import { nameHint, searchPlaces } from "./place.js";
 import { cellAt, centerOn, select } from "./map.js";
 
@@ -32,8 +33,8 @@ function localMatches(q) {
     if (names.some((x) => x.includes(q)))
       out.push({
         score: names.some((x) => x.startsWith(q)) ? 0 : 2,
-        name: `${s[1]} ${s[2]}`,
-        detail: s[5],
+        name: `${nm(s[1], s[2])} ${nm2(s[1], s[2])}`,
+        detail: t(s[5]),
         lat: s[3],
         lon: s[4],
         named: true,
@@ -47,8 +48,8 @@ function localMatches(q) {
         const prefix = en.toLowerCase().startsWith(q) || jp.startsWith(q);
         out.push({
           score: prefix ? 1 : 3,
-          name: `${en} ${jp}`,
-          detail: `${c.pref} · this region's darkest spot`,
+          name: `${nm(en, jp)} ${nm2(en, jp)}`,
+          detail: `${nm(c.pref, c.prefjp)} · ${t("this region's darkest spot")}`,
           lat: c.bl[1],
           lon: c.bl[0],
         });
@@ -76,14 +77,14 @@ function render() {
     `<li role="option" id="ps-${k}" data-k="${k}" aria-selected="${k === active}" class="${k === active ? "on" : ""}"><b>${esc(it.name)}</b>${it.detail ? `<span class="hint">${esc(it.detail)}</span>` : ""}</li>`;
   let html = "";
   if (local.length)
-    html += `<li class="ps-group" role="presentation">Hoshimachi spots and towns</li>${local.map((it, k) => row(it, k)).join("")}`;
+    html += `<li class="ps-group" role="presentation">${t("Hoshimachi spots and towns")}</li>${local.map((it, k) => row(it, k)).join("")}`;
   if (q.length >= MIN_REMOTE_CHARS) {
-    html += `<li class="ps-group" role="presentation">Places in Japan</li>`;
+    html += `<li class="ps-group" role="presentation">${t("Places in Japan")}</li>`;
     if (remote.length) html += remote.map((it, k) => row(it, local.length + k)).join("");
-    else if (remoteState === "loading" || remoteState === "idle") html += `<li class="ps-note" role="presentation">Searching…</li>`;
-    else if (remoteState === "error") html += `<li class="ps-note" role="presentation">Place search is unavailable right now.</li>`;
-    else html += `<li class="ps-note" role="presentation">No other places found.</li>`;
-  } else if (!local.length) html += `<li class="ps-note" role="presentation">Keep typing…</li>`;
+    else if (remoteState === "loading" || remoteState === "idle") html += `<li class="ps-note" role="presentation">${t("Searching…")}</li>`;
+    else if (remoteState === "error") html += `<li class="ps-note" role="presentation">${t("Place search is unavailable right now.")}</li>`;
+    else html += `<li class="ps-note" role="presentation">${t("No other places found.")}</li>`;
+  } else if (!local.length) html += `<li class="ps-note" role="presentation">${t("Keep typing…")}</li>`;
   list.innerHTML = html;
   list.hidden = false;
   input.setAttribute("aria-expanded", "true");
@@ -135,7 +136,7 @@ function choose(it) {
   if (i >= 0) select(i, [it.lat, it.lon]);
   centerOn([it.lat, it.lon], 11);
   if (i < 0) {
-    list.innerHTML = `<li class="ps-note" role="presentation">${esc(it.name)} is outside the regions Hoshimachi covers (sea or a small island).</li>`;
+    list.innerHTML = `<li class="ps-note" role="presentation">${esc(t("{x} is outside the regions Hoshimachi covers (sea or a small island).", { x: it.name }))}</li>`;
     list.hidden = false;
   }
 }

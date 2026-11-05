@@ -8,22 +8,22 @@
 /** Location of the data folder, relative to index.html. */
 export const DATA_URL = "data/";
 
-/** Starting cities for the distance filter: [id, label, [lat, lon] | null]. */
+/** Starting cities for the distance filter: [id, English label, [lat, lon] | null, Japanese label]. */
 export const ORIGINS = [
-  ["any", "Anywhere in Japan", null],
-  ["tokyo", "Tokyo", [35.681, 139.767]],
-  ["osaka", "Osaka", [34.702, 135.496]],
-  ["nagoya", "Nagoya", [35.171, 136.882]],
-  ["sapporo", "Sapporo", [43.069, 141.351]],
-  ["sendai", "Sendai", [38.26, 140.882]],
-  ["fukuoka", "Fukuoka", [33.59, 130.42]],
-  ["hiroshima", "Hiroshima", [34.397, 132.475]],
-  ["kanazawa", "Kanazawa", [36.578, 136.648]],
-  ["naha", "Naha", [26.212, 127.679]],
+  ["any", "Anywhere in Japan", null, "日本全国"],
+  ["tokyo", "Tokyo", [35.681, 139.767], "東京"],
+  ["osaka", "Osaka", [34.702, 135.496], "大阪"],
+  ["nagoya", "Nagoya", [35.171, 136.882], "名古屋"],
+  ["sapporo", "Sapporo", [43.069, 141.351], "札幌"],
+  ["sendai", "Sendai", [38.26, 140.882], "仙台"],
+  ["fukuoka", "Fukuoka", [33.59, 130.42], "福岡"],
+  ["hiroshima", "Hiroshima", [34.397, 132.475], "広島"],
+  ["kanazawa", "Kanazawa", [36.578, 136.648], "金沢"],
+  ["naha", "Naha", [26.212, 127.679], "那覇"],
 ];
 
 /**
- * Map markers: [kind, English name, Japanese name, lat, lon, note].
+ * Map markers: [kind, English name, Japanese name, lat, lon, note]. Notes are translated with t() (i18n-ja.js).
  * kind: "cert" = certified International Dark Sky Place, "mine" = author's field-tested spot,
  * "known" = well-known stargazing spot. Positions are approximate.
  */

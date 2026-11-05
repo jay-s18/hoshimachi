@@ -10,6 +10,7 @@
  * lookup, behind a throttle. Any service may fail; callers then show fewer details.
  */
 import { PLACE_API } from "./config.js";
+import { isJa, lang } from "./i18n.js";
 
 /** "lat,lon" (4 dp, ~10 m) -> { local, area } once looked up; null if nothing was found. */
 const done = new Map();
@@ -18,7 +19,8 @@ const pending = new Map();
 const hints = new Map();
 let nextNominatim = 0;
 
-const keyOf = (lat, lon) => `${lat.toFixed(4)},${lon.toFixed(4)}`;
+// Names come in the page language, so a lookup is per language.
+const keyOf = (lat, lon) => `${lat.toFixed(4)},${lon.toFixed(4)}@${lang}`;
 
 /** Remember that [lat, lon] is the named place `name` (e.g. 摩周湖), so the pin shows that name. */
 export function nameHint(lat, lon, name) {
@@ -47,7 +49,7 @@ export function lookupPlace(lat, lon, stillWanted = () => true) {
       let place = compose(district, osm);
       const hint = hints.get(key);
       if (hint) {
-        const area = [place?.local, place?.area].filter((x) => x && !hint.includes(x)).join(", ");
+        const area = [place?.local, place?.area].filter((x) => x && !hint.includes(x)).join(isJa() ? "、" : ", ");
         place = { local: hint, area };
       }
       done.set(key, place);
@@ -78,7 +80,7 @@ async function nominatimGet(url, stillWanted = () => true) {
 
 async function nominatim(lat, lon, stillWanted) {
   const d = await nominatimGet(
-    `${PLACE_API.nominatim}?format=jsonv2&lat=${lat.toFixed(5)}&lon=${lon.toFixed(5)}&zoom=16&accept-language=en`,
+    `${PLACE_API.nominatim}?format=jsonv2&lat=${lat.toFixed(5)}&lon=${lon.toFixed(5)}&zoom=16&accept-language=${isJa() ? "ja" : "en"}`,
     stillWanted,
   );
   return d.error ? null : d.address || null;
@@ -124,7 +126,7 @@ const SKIP_KEYS = new Set(["highway", "railway", "route", "power", "waterway"]);
 
 async function photonSearch(q, signal) {
   const [w, s, e, n] = PLACE_API.japanBox;
-  const url = `${PLACE_API.photon}?q=${encodeURIComponent(q)}&lang=en&limit=12&bbox=${w},${s},${e},${n}`;
+  const url = `${PLACE_API.photon}?q=${encodeURIComponent(q)}&lang=${isJa() ? "default" : "en"}&limit=12&bbox=${w},${s},${e},${n}`;
   const r = await fetch(url, { signal });
   if (!r.ok) throw new Error(`Photon ${r.status}`);
   // Photon matches loosely ("Nobey" also finds a pub called "Nobby"); for Latin text keep names containing it.
@@ -140,7 +142,8 @@ async function photonSearch(q, signal) {
     .map((f) => {
       const p = f.properties;
       const where = [p.city || p.county || p.locality || p.district, (p.state || "").replace(/ Prefecture$/, "")].filter(Boolean);
-      const kind = (p.osm_value || "").replace(/_/g, " ");
+      // OSM feature types are English words; in Japanese they are left out rather than shown untranslated.
+      const kind = isJa() ? "" : (p.osm_value || "").replace(/_/g, " ");
       return {
         name: p.name,
         detail: [kind && kind !== "yes" ? kind : "", where.filter((x, k) => where.indexOf(x) === k).join(", ")].filter(Boolean).join(" · "),
@@ -156,7 +159,10 @@ function compose(district, a) {
   const sub = [a.quarter, a.neighbourhood, a.hamlet, a.suburb].find(Boolean)?.replace(/^大字/, "");
   const muni = a.city || a.town || a.village || a.municipality;
   const pref = (a.province || a.state || "").replace(/ Prefecture$/, "");
+  const sep = isJa() ? "、" : ", ";
   const local = district || sub || muni || null;
-  const area = [muni, a.county, pref].filter((x, i, xs) => x && x !== local && xs.indexOf(x) === i).join(", ");
+  // Japanese reads largest first (長野県、南佐久郡、南牧村); English smallest first.
+  const parts = [muni, a.county, pref].filter((x, i, xs) => x && x !== local && xs.indexOf(x) === i);
+  const area = (isJa() ? parts.reverse() : parts).join(sep);
   return local || area ? { local, area } : null;
 }

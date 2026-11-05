@@ -9,6 +9,7 @@ import { manifest } from "./data.js";
 import { windowMask } from "./astro.js";
 import { state } from "./state.js";
 import { addDays, fmtDate } from "./util.js";
+import { t } from "./i18n.js";
 
 const VARS = ["cloud_cover", "temperature_2m", "wind_speed_10m", "precipitation", "relative_humidity_2m"];
 const cache = new Map(); // "lat,lon@hour" -> Promise
@@ -102,28 +103,28 @@ function cloudColour(cc, clearBelow) {
 /** The forecast section's HTML for weather w at [lat, lon]. */
 export function weatherHtml(w, lat, lon) {
   const rows = nights(w, lat, lon);
-  if (!rows.length) return `<div class="hint">No forecast for the coming nights here.</div>`;
+  if (!rows.length) return `<div class="hint">${t("No forecast for the coming nights here.")}</div>`;
   const clearBelow = manifest.night.clearCloudBelow * 100;
   const hourHead = rows[0].hours.map((x, k) => `<span>${k % 3 === 0 ? String(x.h).padStart(2, "0") : ""}</span>`).join("");
   const body = rows
     .map((r, j) => {
-      const label = j === 0 ? "Tonight" : fmtDate(r.dt);
+      const label = j === 0 ? t("Tonight") : fmtDate(r.dt);
       const cells = r.hours
         .map(
           (x) =>
-            `<i class="${x.usable ? "use" : ""}" style="background:${cloudColour(x.cc, clearBelow)}" title="${String(x.h).padStart(2, "0")}:00 · cloud ${Math.round(x.cc)}% · ${x.temp.toFixed(0)}°C${x.rain > 0 ? ` · rain ${x.rain.toFixed(1)} mm` : ""}${x.usable ? " · usable dark hour" : ""}"></i>`,
+            `<i class="${x.usable ? "use" : ""}" style="background:${cloudColour(x.cc, clearBelow)}" title="${String(x.h).padStart(2, "0")}:00 · ${t("cloud {p}%", { p: Math.round(x.cc) })} · ${x.temp.toFixed(0)}°C${x.rain > 0 ? ` · ${t("rain {mm} mm", { mm: x.rain.toFixed(1) })}` : ""}${x.usable ? ` · ${t("usable dark hour")}` : ""}"></i>`,
         )
         .join("");
       const verdict = !r.usableH
-        ? `<span class="hint">no dark hours</span>`
-        : `<span class="${r.clearH >= state.hours ? "fc-good" : "fc-bad"}">${r.clearH}/${r.usableH} h clear</span>`;
-      const extras = [`low ${r.low.toFixed(0)}°`, `wind ${Math.round(r.wind)} km/h`];
-      if (r.rain >= 0.5) extras.push(`rain ${r.rain.toFixed(1)} mm`);
-      if (r.rh >= 95 && r.low < 10) extras.push("dew likely");
-      return `<div class="wx-row${r.trip ? " trip" : ""}"><span class="wx-d">${label}${r.trip ? ' <span class="wx-tag">trip</span>' : ""}</span><span class="wx-h">${cells}</span><span class="wx-s">${verdict}<span class="hint num">${extras.join(" · ")}</span></span></div>`;
+        ? `<span class="hint">${t("no dark hours")}</span>`
+        : `<span class="${r.clearH >= state.hours ? "fc-good" : "fc-bad"}">${t("{a}/{b} h clear", { a: r.clearH, b: r.usableH })}</span>`;
+      const extras = [t("low {c}°", { c: r.low.toFixed(0) }), t("wind {v} km/h", { v: Math.round(r.wind) })];
+      if (r.rain >= 0.5) extras.push(t("rain {mm} mm", { mm: r.rain.toFixed(1) }));
+      if (r.rh >= 95 && r.low < 10) extras.push(t("dew likely"));
+      return `<div class="wx-row${r.trip ? " trip" : ""}"><span class="wx-d">${label}${r.trip ? ' <span class="wx-tag">${t("trip")}</span>' : ""}</span><span class="wx-h">${cells}</span><span class="wx-s">${verdict}<span class="hint num">${extras.join(" · ")}</span></span></div>`;
     })
     .join("");
   return `<div class="wx"><div class="wx-row wx-head"><span class="wx-d"></span><span class="wx-h">${hourHead}</span><span class="wx-s"></span></div>${body}</div>
-    <div class="wx-key hint"><span><i style="background:${cloudColour(0, clearBelow)}"></i>clear (cloud under ${clearBelow}%, as in the odds)</span><span><i style="background:${cloudColour(50, clearBelow)}"></i>partly cloudy</span><span><i style="background:${cloudColour(100, clearBelow)}"></i>overcast</span><span><i class="use" style="background:${cloudColour(0, clearBelow)}"></i>usable dark hour</span></div>
-    <div class="hint">Model forecast for a ~5 km square around the pin (ground ${Math.round(w.elevation)} m). Valley fog and mountain cloud can differ locally.</div>`;
+    <div class="wx-key hint"><span><i style="background:${cloudColour(0, clearBelow)}"></i>${t("clear (cloud under {p}%, as in the odds)", { p: clearBelow })}</span><span><i style="background:${cloudColour(50, clearBelow)}"></i>${t("partly cloudy")}</span><span><i style="background:${cloudColour(100, clearBelow)}"></i>${t("overcast")}</span><span><i class="use" style="background:${cloudColour(0, clearBelow)}"></i>${t("usable dark hour")}</span></div>
+    <div class="hint">${t("Model forecast for a ~5 km square around the pin (ground {m} m). Valley fog and mountain cloud can differ locally.", { m: Math.round(w.elevation) })}</div>`;
 }

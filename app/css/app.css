@@ -1059,3 +1059,71 @@ dialog::backdrop {
   height: 11px;
   border-radius: 2px;
 }
+
+/* ---------- language ---------- */
+/* Prose written in both languages (the How it works dialog): show the block matching <html lang>. */
+html[lang="ja"] [data-lang="en"],
+html:not([lang="ja"]) [data-lang="ja"] {
+  display: none;
+}
+/* Japanese text reads best in the Japanese face first, and a little more loosely. */
+html[lang="ja"] {
+  --body: "IBM Plex Sans JP", "Hiragino Sans", "IBM Plex Sans", system-ui, sans-serif;
+}
+html[lang="ja"] .about p,
+html[lang="ja"] .about li {
+  line-height: 1.75;
+}
+
+/* ---------- What you'll see here (Bortle class in plain words) ---------- */
+.skyview {
+  display: block;
+  width: 100%;
+  border-radius: 8px;
+  border: 1px solid var(--rule);
+}
+.skyview-seg {
+  margin-top: 8px;
+}
+.skyview-seg button {
+  position: relative;
+  padding: 5px 0;
+}
+.skyview-seg .here {
+  position: absolute;
+  top: 3px;
+  right: 4px;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--odds);
+}
+.skyview-txt {
+  margin: 8px 0 4px;
+}
+.skyview-head {
+  margin-bottom: 6px;
+}
+.skyview-head .chip {
+  border: 1px solid var(--rule);
+  margin-left: 4px;
+}
+.skyview-facts {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 12px;
+  align-items: start;
+}
+.skyview-facts > div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.skyview-facts .v {
+  font-size: 20px;
+  color: var(--ink);
+}
+.skyview-facts .k {
+  font-size: 11px;
+  color: var(--muted, #9a9387);
+}

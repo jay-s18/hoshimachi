@@ -1,11 +1,12 @@
 /**
  * The Leaflet map: base layers, region squares, raster overlays, legend, selection and pin.
  */
-import { BASE_TILES, BORTLE_COLORS, GSI_ATTR, MONTHS, ODDS_STOPS, SPOTS, TILE_PROBE } from "./config.js";
+import { BASE_TILES, BORTLE_COLORS, GSI_ATTR, ODDS_STOPS, SPOTS, TILE_PROBE } from "./config.js";
+import { nm, nm2, t } from "./i18n.js";
 import { BOUNDS, CELLS, GRID, OVERLAY_URLS, PREFS, TRENDG } from "./data.js";
 import { trendClassOf } from "./sky.js";
 import { state, monthOf } from "./state.js";
-import { ib, pct } from "./util.js";
+import { esc, ib, monthName, pct } from "./util.js";
 import { results } from "./app.js";
 import { renderPanel } from "./panel.js";
 import { writeLink } from "./link.js";
@@ -83,7 +84,7 @@ export function initMap() {
         () => {
           const r = results[i];
           const v = r ? (state.layer === "month" ? r.m : r.p) : null;
-          return `<b>${c.en}</b> <span class="jp">${c.jp}</span><br>${c.pref}${v != null ? ` · <span class="num">${pct(v)}</span>` : ""}`;
+          return `<b>${esc(nm(c.en, c.jp))}</b> <span class="jp">${esc(nm2(c.en, c.jp))}</span><br>${esc(nm(c.pref, c.prefjp))}${v != null ? ` · <span class="num">${pct(v)}</span>` : ""}`;
         },
         { sticky: true },
       )
@@ -95,11 +96,11 @@ export function initMap() {
         icon: L.divIcon({ className: "", html: `<div class="mk ${s[0]}">${s[0] === "known" ? "●" : "✦"}</div>`, iconSize: [14, 14] }),
         keyboard: false,
       })
-        .bindTooltip(`<b>${s[1]}</b> <span class="jp">${s[2]}</span><br><span class="hint">${s[5]}</span>`)
+        .bindTooltip(() => `<b>${nm(s[1], s[2])}</b> <span class="jp">${nm2(s[1], s[2])}</span><br><span class="hint">${t(s[5])}</span>`)
         // Markers swallow clicks, so the region square underneath never sees them: select it here instead.
         .on("click", () => {
           const i = cellAt(s[3], s[4]);
-          nameHint(s[3], s[4], `${s[1]} ${s[2]}`);
+          nameHint(s[3], s[4], `${nm(s[1], s[2])} ${nm2(s[1], s[2])}`);
           if (i >= 0) select(i, [s[3], s[4]]);
         }),
     ),
@@ -219,7 +220,7 @@ function applyOpacity() {
 
 function opacityCtl() {
   const v = Math.round((state.layer === "dark" || state.layer === "trend" ? state.opRaster : state.opOdds) * 100);
-  return `<div class="row" style="margin-top:8px"><label for="opac" class="hint" style="white-space:nowrap">Overlay</label><input type="range" id="opac" min="10" max="100" step="5" value="${v}"><span class="num hint" id="opacOut" style="min-width:36px;text-align:right">${v}%</span></div>`;
+  return `<div class="row" style="margin-top:8px"><label for="opac" class="hint" style="white-space:nowrap">${t("Overlay")}</label><input type="range" id="opac" min="10" max="100" step="5" value="${v}"><span class="num hint" id="opacOut" style="min-width:36px;text-align:right">${v}%</span></div>`;
 }
 
 function wireOpacity() {
@@ -239,7 +240,7 @@ export function baseUI() {
     const off = b.dataset.v !== "plain" && tilesOK === false;
     b.disabled = off;
     b.classList.toggle("on", b.dataset.v === state.base);
-    b.title = off ? "Road and terrain maps could not load here (the page may be embedded in a viewer that blocks them)." : "";
+    b.title = off ? t("Road and terrain maps could not load here (the page may be embedded in a viewer that blocks them).") : "";
   });
 }
 
@@ -271,15 +272,15 @@ function legend() {
     const grad = ODDS_STOPS.map(([p]) => `${oddsColor((p / 0.6) * mx)} ${(p / 0.6) * 100}%`).join(",");
     const title =
       lay === "trip"
-        ? "Chance of at least one good night on your trip"
-        : `Share of good nights in ${MONTHS[monthOf() - 1]}, moon not counted`;
-    el.innerHTML = `<div class="ttl lblrow">${title}${ib("Each square is a ~28 km cloud cell. Darkened squares fail your darkness or distance filter. A white box marks the selected region and a white dot its darkest spot.", "Map squares")}</div>
+        ? t("Chance of at least one good night on your trip")
+        : t("Share of good nights in {m}, moon not counted", { m: monthName(monthOf() - 1) });
+    el.innerHTML = `<div class="ttl lblrow">${title}${ib(t("Each square is a ~28 km cloud cell. Darkened squares fail your darkness or distance filter. A white box marks the selected region and a white dot its darkest spot."), t("Map squares"))}</div>
       <div class="bar" style="background:linear-gradient(90deg,${grad})"></div><div class="ticks num">${(lay === "month" ? [0, 15, 30, 45, "60+"] : [0, 25, 50, 75, 100]).map((v) => `<span>${v}%</span>`).join("")}</div>
-      <div class="keys" style="margin-top:6px"><span><span class="mk cert" style="display:inline">✦</span> certified</span><span><span class="mk mine" style="display:inline">✦</span> author's spots</span><span><span class="mk known" style="display:inline">●</span> well-known</span></div>`;
+      <div class="keys" style="margin-top:6px"><span><span class="mk cert" style="display:inline">✦</span> ${t("certified")}</span><span><span class="mk mine" style="display:inline">✦</span> ${t("author's spots")}</span><span><span class="mk known" style="display:inline">●</span> ${t("well-known")}</span></div>`;
   } else if (lay === "dark") {
-    el.innerHTML = `<div class="ttl lblrow">Estimated sky brightness (Bortle class)${ib("Modelled zenith sky brightness from satellite night lights, spread over 150 km. Brighter and warmer means more light pollution. Labels may be off by one class.", "Darkness layer")}</div><div class="bar" style="background:linear-gradient(90deg,${BORTLE_COLORS.join(",")})"></div><div class="ticks num">${BORTLE_COLORS.map((_, i) => `<span>${i + 1}</span>`).join("")}</div><div class="ticks"><span>darkest sky</span><span>city glow</span></div>`;
+    el.innerHTML = `<div class="ttl lblrow">${t("Estimated sky brightness (Bortle class)")}${ib(t("Modelled zenith sky brightness from satellite night lights, spread over 150 km. Brighter and warmer means more light pollution. Labels may be off by one class."), t("Darkness layer"))}</div><div class="bar" style="background:linear-gradient(90deg,${BORTLE_COLORS.join(",")})"></div><div class="ticks num">${BORTLE_COLORS.map((_, i) => `<span>${i + 1}</span>`).join("")}</div><div class="ticks"><span>${t("darkest sky")}</span><span>${t("city glow")}</span></div>`;
   } else {
-    el.innerHTML = `<div class="ttl lblrow">Satellite night-light trend${ib("Change in VIIRS satellite night lights over the years on record. The satellite under-sees blue-white LEDs, so real brightening is worse than shown, and some LED-converted areas may even appear to dim.", "Light trend")}</div><div class="keys"><span><span class="sw" style="background:#ffb65c"></span>brightening fast</span><span><span class="sw" style="background:#c47028"></span>brightening</span><span><span class="sw" style="background:#6e6860"></span>stable</span><span><span class="sw" style="background:#5888c8"></span>dimming</span></div>`;
+    el.innerHTML = `<div class="ttl lblrow">${t("Satellite night-light trend")}${ib(t("Change in VIIRS satellite night lights over the years on record. The satellite under-sees blue-white LEDs, so real brightening is worse than shown, and some LED-converted areas may even appear to dim."), t("Light trend"))}</div><div class="keys"><span><span class="sw" style="background:#ffb65c"></span>${t("brightening fast")}</span><span><span class="sw" style="background:#c47028"></span>${t("brightening")}</span><span><span class="sw" style="background:#6e6860"></span>${t("stable")}</span><span><span class="sw" style="background:#5888c8"></span>${t("dimming")}</span></div>`;
   }
   el.insertAdjacentHTML("beforeend", opacityCtl());
   wireOpacity();

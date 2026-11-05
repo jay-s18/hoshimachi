@@ -4,6 +4,7 @@
 import { loadData, manifest, CELLS, YEARS, MODEL, periodLabel } from "./data.js";
 import { state } from "./state.js";
 import { esc, isoAdd } from "./util.js";
+import { applyStatic, isJa, onLang, t } from "./i18n.js";
 import { nextNewMoon } from "./astro.js";
 import { centerOn, initMap, select } from "./map.js";
 import { readLink } from "./link.js";
@@ -39,57 +40,66 @@ function bindText() {
 
 /** The "How well it works" section of the About dialog, from manifest.validation and manifest.stats. */
 function renderValidation() {
-  const el = document.getElementById("validation-summary");
+  const els = document.querySelectorAll("[data-validation]"); // one in each language's copy of the dialog
   const v = manifest.validation;
   if (!v) {
-    el.innerHTML = `<p class="hint">No validation results are bundled with this data.</p>`;
+    els.forEach((el) => (el.innerHTML = `<p class="hint">${t("No validation results are bundled with this data.")}</p>`));
     return;
   }
   const ci = (s) => `${fmtPct(s.value)}% <span class="hint">(${fmtPct(s.lo)}–${fmtPct(s.hi)})</span>`;
   const rows = v.results
     .map(
       (r) =>
-        `<tr><td>${r.nights} night${r.nights > 1 ? "s" : ""}</td><td class="num">${fmtPct(r.maxCalibrationGap)} pts</td><td class="num">${ci(r.skill.regionAllYear)}</td><td class="num">${ci(r.skill.nationalMonth)}</td></tr>`,
+        `<tr><td>${t(r.nights > 1 ? "{n} nights" : "{n} night", { n: r.nights })}</td><td class="num">${t("{x} pts", { x: fmtPct(r.maxCalibrationGap) })}</td><td class="num">${ci(r.skill.regionAllYear)}</td><td class="num">${ci(r.skill.nationalMonth)}</td></tr>`,
     )
     .join("");
   const rm = v.results.map((r) => r.skill.regionMonth.value);
   const perLength = v.predictionsPerTripLength
-    ? ` (about ${Math.round(v.predictionsPerTripLength / 1000).toLocaleString("en")},000 predictions per trip length)`
+    ? t(" (about {k},000 predictions per trip length)", { k: Math.round(v.predictionsPerTripLength / 1000).toLocaleString("en") })
     : "";
-  let html = `<p>Settings were chosen on ${yearSpan(v.tuneYears)} using data before them. The model was then refit on everything before ${v.testYears[0]} and tested once on every trip start date in ${yearSpan(v.testYears)} across all ${CELLS.length.toLocaleString("en")} regions${perLength}.</p>
+  let html = `<p>${t("Settings were chosen on {tune} using data before them. The model was then refit on everything before {y0} and tested once on every trip start date in {test} across all {n} regions{per}.", { tune: yearSpan(v.tuneYears), y0: v.testYears[0], test: yearSpan(v.testYears), n: CELLS.length.toLocaleString("en"), per: perLength })}</p>
     <table>
-      <tr><th>Trip length</th><th>Largest calibration gap</th><th>Better than ignoring the season</th><th>Better than ignoring the region</th></tr>
+      <tr><th>${t("Trip length")}</th><th>${t("Largest calibration gap")}</th><th>${t("Better than ignoring the season")}</th><th>${t("Better than ignoring the region")}</th></tr>
       ${rows}
     </table>
-    <p>Brier skill scores with 95% block-bootstrap intervals. Most of the skill comes from knowing the region and the season: against a plain "this region, this month" average, the replay and blending add ${fmtPct(Math.min(...rm))}–${fmtPct(Math.max(...rm))}%. A single night's weather is mostly luck, so no base rate can be sharp; its job is to be honest about the odds.</p>`;
-  if (v.note) html += `<p>${esc(v.note)}</p>`;
+    <p>${t('Brier skill scores with 95% block-bootstrap intervals. Most of the skill comes from knowing the region and the season: against a plain "this region, this month" average, the replay and blending add {lo}–{hi}%. A single night\'s weather is mostly luck, so no base rate can be sharp; its job is to be honest about the odds.', { lo: fmtPct(Math.min(...rm)), hi: fmtPct(Math.max(...rm)) })}</p>`;
+  // The note is written by the pipeline in English only.
+  if (v.note && !isJa()) html += `<p>${esc(v.note)}</p>`;
 
   const s = manifest.stats;
   if (s) {
     const bits = [];
     if (s.darknessCloudCorrelation != null)
       bits.push(
-        `Across Japan, darkness and clear-night odds are negatively correlated (${s.darknessCloudCorrelation.toFixed(2).replace("-", "−")}).`,
+        t("Across Japan, darkness and clear-night odds are negatively correlated ({r}).", {
+          r: s.darknessCloudCorrelation.toFixed(2).replace("-", "−"),
+        }),
       );
     if (s.clearNightShareHalves?.length === 2) {
       const [a, b] = s.clearNightShareHalves;
       bits.push(
-        `National clear-night frequency was ${fmtPct(a.share)}% in ${yearSpan(a.years)} and ${fmtPct(b.share)}% in ${yearSpan(b.years)}.`,
+        t("National clear-night frequency was {a}% in {ya} and {b}% in {yb}.", {
+          a: fmtPct(a.share),
+          ya: yearSpan(a.years),
+          b: fmtPct(b.share),
+          yb: yearSpan(b.years),
+        }),
       );
     }
-    if (bits.length) html += `<p>Other checks: ${bits.join(" ")}</p>`;
+    if (bits.length) html += `<p>${t("Other checks:")} ${bits.join(" ")}</p>`;
   }
-  el.innerHTML = html;
+  els.forEach((el) => (el.innerHTML = html));
 }
 
 function showBootError(err) {
   const boot = document.getElementById("boot");
   boot.classList.add("error");
-  boot.innerHTML = `<b>Hoshimachi could not start.</b><br>${esc(err.message || String(err))}<br><span class="hint">If you opened index.html directly from disk, serve the folder over HTTP instead (see README).</span>`;
+  boot.innerHTML = `<b>${t("Hoshimachi could not start.")}</b><br>${esc(err.message || String(err))}<br><span class="hint">${t("If you opened index.html directly from disk, serve the folder over HTTP instead (see README).")}</span>`;
   console.error(err);
 }
 
 async function main() {
+  applyStatic(); // the loading message and page title in the chosen language
   try {
     await loadData();
     bindText();
@@ -102,6 +112,10 @@ async function main() {
     initControls();
     initSearch();
     recompute();
+    onLang(() => {
+      renderValidation();
+      recompute(); // redraws the map legend, the list or card, and the moon strip
+    });
     if (shared.sel !== null) {
       select(shared.sel, shared.pin);
       centerOn(state.pin);

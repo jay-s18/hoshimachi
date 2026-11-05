@@ -24,9 +24,9 @@
     <script type="module" src="js/main.js"></script>
   </head>
   <body>
-    <div id="boot" class="boot" role="status" aria-live="polite">Loading data…</div>
+    <div id="boot" class="boot" role="status" aria-live="polite" data-i18n>Loading data…</div>
     <header>
-      <div class="brand" title="Hoshimachi: odds of a clear, dark night anywhere in Japan">
+      <div class="brand" title="Hoshimachi: odds of a clear, dark night anywhere in Japan" data-i18n-title>
         <svg class="logo" width="34" height="34" viewBox="0 0 34 34" aria-hidden="true">
           <defs>
             <clipPath id="lc"><circle cx="17" cy="17" r="15.2" /></clipPath>
@@ -37,20 +37,30 @@
         ><span class="kanji">星待ち</span>
       </div>
       <div class="spacer"></div>
-      <button class="hbtn" id="shareBtn" type="button" title="Copy a link to this exact view: dates, settings and pinned spot">
+      <button class="hbtn" id="langBtn" type="button" lang="ja" title="日本語で表示 / Show in English">日本語</button>
+      <button
+        class="hbtn"
+        id="shareBtn"
+        type="button"
+        title="Copy a link to this exact view: dates, settings and pinned spot"
+        data-i18n
+        data-i18n-title
+      >
         Share
       </button>
-      <button class="hbtn" id="aboutBtn" type="button">How it works</button>
-      <button class="hbtn" id="redBtn" type="button" aria-pressed="false">Red light mode</button>
+      <button class="hbtn" id="aboutBtn" type="button" data-i18n>How it works</button>
+      <button class="hbtn" id="redBtn" type="button" aria-pressed="false" data-i18n>Red light mode</button>
     </header>
     <main>
-      <aside aria-label="Trip settings">
+      <aside aria-label="Trip settings" data-i18n-aria>
         <div class="grp">
           <div class="lblrow">
-            <label for="origin" class="lbl">Starting from</label
+            <label for="origin" class="lbl" data-i18n>Starting from</label
             ><button
               type="button"
               class="ib"
+              data-i18n-tip
+              data-i18n-aria
               aria-label="About: Starting from"
               data-tip="Regions are filtered by straight-line distance from this city to each region&#x27;s darkest spot. Real travel is longer, and islands need a ferry or flight. Choose ‘Anywhere in Japan’ to see everything."
             >
@@ -59,7 +69,7 @@
           </div>
           <select id="origin"></select>
           <div class="row">
-            <input type="range" id="dist" min="100" max="1500" step="50" value="400" aria-label="Maximum distance" /><span
+            <input type="range" id="dist" min="100" max="1500" step="50" value="400" aria-label="Maximum distance" data-i18n-aria /><span
               class="num"
               id="distOut"
               style="min-width: 64px; text-align: right"
@@ -69,10 +79,12 @@
         </div>
         <div class="grp">
           <div class="lblrow">
-            <span class="lbl">Trip dates</span
+            <span class="lbl" data-i18n>Trip dates</span
             ><button
               type="button"
               class="ib"
+              data-i18n-tip
+              data-i18n-aria
               aria-label="About: Trip dates"
               data-tip="Pick the day you arrive and the day you leave. Every night in between counts, like a hotel booking: arrive Nov 8 and leave Nov 10 means the nights of Nov 8 and Nov 9."
             >
@@ -80,17 +92,21 @@
             </button>
           </div>
           <div class="row">
-            <div class="field"><label for="dFrom" class="hint">Arrive</label><input type="date" id="dFrom" min="2015-01-01" /></div>
-            <div class="field"><label for="dTo" class="hint">Leave</label><input type="date" id="dTo" min="2015-01-02" /></div>
+            <div class="field">
+              <label for="dFrom" class="hint" data-i18n>Arrive</label><input type="date" id="dFrom" min="2015-01-01" />
+            </div>
+            <div class="field"><label for="dTo" class="hint" data-i18n>Leave</label><input type="date" id="dTo" min="2015-01-02" /></div>
           </div>
           <div class="hint" id="nightsOut"></div>
         </div>
         <div class="grp">
           <div class="lblrow">
-            <span class="lbl">Moon each night</span
+            <span class="lbl" data-i18n>Moon each night</span
             ><button
               type="button"
               class="ib"
+              data-i18n-tip
+              data-i18n-aria
               aria-label="About: Moon each night"
               data-tip="The share of the moon that is lit, and how many dark hours it costs on that night in central Japan. Hours with the moon above the horizon and more than 25% lit don&#x27;t count towards a good night. Each region card shows that region&#x27;s own hours."
             >
@@ -101,24 +117,30 @@
         </div>
         <div class="grp">
           <div class="lblrow">
-            <span class="lbl">Live forecast</span
+            <span class="lbl" data-i18n>Live forecast</span
             ><button
               type="button"
               class="ib"
+              data-i18n-tip
+              data-i18n-aria
               aria-label="About: Live forecast"
               data-tip="When your trip is within a week, this updates the odds with today&#x27;s cloud forecast from the Japan Meteorological Agency. It is off by default because the free weather service has a limit shared by everyone on the same network. You can still see each spot&#x27;s forecast in its card."
             >
               i
             </button>
           </div>
-          <label class="row" style="font-size: 13px"><input type="checkbox" id="liveFc" /> Use the live forecast in the odds</label>
+          <label class="row" style="font-size: 13px"
+            ><input type="checkbox" id="liveFc" /> <span data-i18n>Use the live forecast in the odds</span></label
+          >
         </div>
         <div class="grp">
           <div class="lblrow">
-            <span class="lbl">Shooting</span
+            <span class="lbl" data-i18n>Shooting</span
             ><button
               type="button"
               class="ib"
+              data-i18n-tip
+              data-i18n-aria
               aria-label="About: Shooting"
               data-tip="Any dark sky: counts hours with the sun 18° below the horizon and the moon down or under 25% lit. Milky Way core: also needs the galactic core 10° above the horizon, roughly February to October in Japan. The core is only up for a few hours, so lower the hours needed to 1–2."
             >
@@ -126,15 +148,18 @@
             </button>
           </div>
           <div class="seg" id="target">
-            <button type="button" data-v="sky" class="on">Any dark sky</button><button type="button" data-v="mw">Milky Way core</button>
+            <button type="button" data-v="sky" class="on" data-i18n>Any dark sky</button
+            ><button type="button" data-v="mw" data-i18n>Milky Way core</button>
           </div>
         </div>
         <div class="grp">
           <div class="lblrow">
-            <span class="lbl">Darkest spot at least</span
+            <span class="lbl" data-i18n>Darkest spot at least</span
             ><button
               type="button"
               class="ib"
+              data-i18n-tip
+              data-i18n-aria
               aria-label="About: Bortle limit"
               data-tip="The Bortle scale runs from 1 (pristine sky) to 9 (inner city). Regions whose darkest ~1 km spot is brighter than your limit are hidden. Bortle 4 or darker shows the Milky Way clearly. Values are estimates and may be off by one class."
             >
@@ -142,17 +167,19 @@
             </button>
           </div>
           <div class="seg" id="bortle">
-            <button type="button" data-v="1">Bortle 1</button><button type="button" data-v="2">2</button
+            <button type="button" data-v="1" data-i18n>Bortle 1</button><button type="button" data-v="2">2</button
             ><button type="button" data-v="3">3</button><button type="button" data-v="4" class="on">4</button
             ><button type="button" data-v="5">5</button>
           </div>
         </div>
         <div class="grp">
           <div class="lblrow">
-            <span class="lbl">A good night needs</span
+            <span class="lbl" data-i18n>A good night needs</span
             ><button
               type="button"
               class="ib"
+              data-i18n-tip
+              data-i18n-aria
               aria-label="About: Good night"
               data-tip="How many clear, dark hours a night needs to count as good. Clear means under 25% cloud in that hour. ‘In a row’ needs one unbroken window. ‘Passing clouds OK’ adds up clear hours with gaps, which suits places like Yaeyama where clouds drift through."
             >
@@ -160,7 +187,7 @@
             </button>
           </div>
           <div class="row">
-            <input type="range" id="hours" min="1" max="10" step="1" value="3" aria-label="Clear hours needed" /><span
+            <input type="range" id="hours" min="1" max="10" step="1" value="3" aria-label="Clear hours needed" data-i18n-aria /><span
               class="num"
               id="hoursOut"
               style="min-width: 72px; text-align: right"
@@ -168,27 +195,32 @@
             >
           </div>
           <div class="seg" id="rule">
-            <button type="button" data-v="run" class="on">In a row</button><button type="button" data-v="any">Passing clouds OK</button>
+            <button type="button" data-v="run" class="on" data-i18n>In a row</button
+            ><button type="button" data-v="any" data-i18n>Passing clouds OK</button>
           </div>
         </div>
         <div class="grp">
           <div class="lblrow">
-            <span class="lbl">On the map</span
+            <span class="lbl" data-i18n>On the map</span
             ><button
               type="button"
               class="ib"
+              data-i18n-tip
+              data-i18n-aria
               aria-label="About: Map markers"
               data-tip="Gold stars are certified International Dark Sky Places. White stars are spots the author has shot from. Grey dots are well-known stargazing spots. Positions are approximate."
             >
               i
             </button>
           </div>
-          <label class="row" style="font-size: 13px"><input type="checkbox" id="showSpots" checked /> Certified and well-known spots</label>
+          <label class="row" style="font-size: 13px"
+            ><input type="checkbox" id="showSpots" checked /> <span data-i18n>Certified and well-known spots</span></label
+          >
         </div>
       </aside>
 
       <div class="mapwrap">
-        <div id="map" role="application" aria-label="Map of Japan"></div>
+        <div id="map" role="application" aria-label="Map of Japan" data-i18n-aria></div>
         <div class="msearch" role="search">
           <svg class="msearch-icon" width="15" height="15" viewBox="0 0 24 24" aria-hidden="true">
             <path
@@ -200,6 +232,7 @@
             id="placeSearch"
             type="search"
             placeholder="Search a place: Nobeyama, 摩周湖, Mount Fuji…"
+            data-i18n-ph
             autocomplete="off"
             spellcheck="false"
             role="combobox"
@@ -207,140 +240,254 @@
             aria-expanded="false"
             aria-controls="placeList"
             aria-label="Search a place in Japan"
+            data-i18n-aria
           />
-          <ul id="placeList" role="listbox" aria-label="Matching places" hidden></ul>
+          <ul id="placeList" role="listbox" aria-label="Matching places" data-i18n-aria hidden></ul>
         </div>
         <div class="seg layers" id="layer">
-          <button type="button" data-v="trip" class="on">Trip odds</button><button type="button" data-v="month">Month odds</button
-          ><button type="button" data-v="dark">Darkness</button><button type="button" data-v="trend">Light trend</button>
+          <button type="button" data-v="trip" class="on" data-i18n>Trip odds</button
+          ><button type="button" data-v="month" data-i18n>Month odds</button><button type="button" data-v="dark" data-i18n>Darkness</button
+          ><button type="button" data-v="trend" data-i18n>Light trend</button>
         </div>
         <div class="basebox">
           <div class="seg" id="baseSeg">
-            <button type="button" data-v="plain">Plain</button><button type="button" data-v="roads" class="on">Roads</button
-            ><button type="button" data-v="terrain">Terrain</button>
+            <button type="button" data-v="plain" data-i18n>Plain</button
+            ><button type="button" data-v="roads" class="on" data-i18n>Roads</button
+            ><button type="button" data-v="terrain" data-i18n>Terrain</button>
           </div>
         </div>
         <div class="legend" id="legend"></div>
       </div>
 
-      <section class="res" aria-label="Results" id="res"></section>
+      <section class="res" aria-label="Results" data-i18n-aria id="res"></section>
     </main>
 
     <div id="tip" role="status" aria-live="polite"></div>
     <dialog id="about">
       <div class="about">
-        <button class="x" type="button" id="aboutClose">Close</button>
-        <h2>How Hoshimachi works</h2>
-        <p class="jp" style="margin-top: 0">星待ち, waiting for the stars</p>
-        <p>
-          Darkness maps tell you where the sky is dark, and forecasts cover the next few days. Neither tells you, weeks ahead, how likely a
-          trip is to get you a usable night. Hoshimachi estimates that base rate by replaying <span data-bind="yearsCount">ten</span> years
-          of real weather through the exact darkness and moon hours of your dates.
-        </p>
+        <button class="x" type="button" id="aboutClose" data-i18n>Close</button>
+        <div data-lang="en">
+          <h2>How Hoshimachi works</h2>
+          <p class="jp" style="margin-top: 0">星待ち, waiting for the stars</p>
+          <p>
+            Darkness maps tell you where the sky is dark, and forecasts cover the next few days. Neither tells you, weeks ahead, how likely
+            a trip is to get you a usable night. Hoshimachi estimates that base rate by replaying
+            <span data-bind="yearsCount">ten</span> years of real weather through the exact darkness and moon hours of your dates.
+          </p>
 
-        <h3>What counts as a good night</h3>
-        <ol>
-          <li>
-            <b>Dark site.</b> The region's darkest ~1 km spot meets your Bortle limit. Sky brightness is modelled from VIIRS satellite night
-            lights spread over 150 km with Walker's law (glow ∝ distance<sup>−2.5</sup>), converted to zenith mag/arcsec² and then to a
-            Bortle class.
-          </li>
-          <li>
-            <b>Dark, moon-free hours.</b> Sun at least 18° below the horizon, and the moon either below the horizon or under 25% lit. In
-            Milky Way mode the galactic core must also be 10° up. These are calculated exactly for your dates and the region's darkest spot.
-          </li>
-          <li>
-            <b>Clear sky.</b> At least the chosen number of hours with total cloud under 25% inside those hours, in a row or with gaps if
-            you allow passing clouds.
-          </li>
-        </ol>
+          <h3>What counts as a good night</h3>
+          <ol>
+            <li>
+              <b>Dark site.</b> The region's darkest ~1 km spot meets your Bortle limit. Sky brightness is modelled from VIIRS satellite
+              night lights spread over 150 km with Walker's law (glow ∝ distance<sup>−2.5</sup>), converted to zenith mag/arcsec² and then
+              to a Bortle class.
+            </li>
+            <li>
+              <b>Dark, moon-free hours.</b> Sun at least 18° below the horizon, and the moon either below the horizon or under 25% lit. In
+              Milky Way mode the galactic core must also be 10° up. These are calculated exactly for your dates and the region's darkest
+              spot.
+            </li>
+            <li>
+              <b>Clear sky.</b> At least the chosen number of hours with total cloud under 25% inside those hours, in a row or with gaps if
+              you allow passing clouds.
+            </li>
+          </ol>
 
-        <h3>How the odds are estimated</h3>
-        <ul>
-          <li>
-            <b>A base rate, not a forecast.</b> A clear night on your dates in a past year says nothing about this year. What carries over
-            is the season: rainy season, the winter monsoon on the Sea of Japan side, clear Pacific-side winters. So the tool pools every
-            past year and a ±<span data-bind="windowDays">30</span>-day window around your dates (up to
-            <span data-bind="maxTrips">610</span> past trips) and counts how often at least one night worked. Replaying real sequences keeps
-            the fact that bad weather comes in multi-day systems.
-          </li>
-          <li>
-            <b>Shrinkage.</b> Each region is blended <span data-bind="blendRatio">75/25</span> with the average of its neighbouring ~28 km
-            cells. Small samples exaggerate extremes. Blending pulls them back and made the odds better calibrated in testing.
-          </li>
-          <li>
-            <b>Uncertainty.</b> The range shown is a 95% interval from how much the odds vary between years (about ±10 points typically).
-            Neighbouring days in one year share weather, so the past trips are not independent samples. Regions whose ranges overlap the top
-            result are effectively tied.
-          </li>
-          <li>
-            <b>No peeking.</b> If your dates fall inside <span data-bind="period">2015–2024</span>, that year is left out of the odds and
-            shown separately as what actually happened.
-          </li>
-        </ul>
+          <h3>How the odds are estimated</h3>
+          <ul>
+            <li>
+              <b>A base rate, not a forecast.</b> A clear night on your dates in a past year says nothing about this year. What carries over
+              is the season: rainy season, the winter monsoon on the Sea of Japan side, clear Pacific-side winters. So the tool pools every
+              past year and a ±<span data-bind="windowDays">30</span>-day window around your dates (up to
+              <span data-bind="maxTrips">610</span> past trips) and counts how often at least one night worked. Replaying real sequences
+              keeps the fact that bad weather comes in multi-day systems.
+            </li>
+            <li>
+              <b>Shrinkage.</b> Each region is blended <span data-bind="blendRatio">75/25</span> with the average of its neighbouring ~28 km
+              cells. Small samples exaggerate extremes. Blending pulls them back and made the odds better calibrated in testing.
+            </li>
+            <li>
+              <b>Uncertainty.</b> The range shown is a 95% interval from how much the odds vary between years (about ±10 points typically).
+              Neighbouring days in one year share weather, so the past trips are not independent samples. Regions whose ranges overlap the
+              top result are effectively tied.
+            </li>
+            <li>
+              <b>No peeking.</b> If your dates fall inside <span data-bind="period">2015–2024</span>, that year is left out of the odds and
+              shown separately as what actually happened.
+            </li>
+          </ul>
 
-        <h3>How well it works</h3>
-        <!-- Filled from data/manifest.json ("validation" and "stats"), so it stays correct after each yearly data update. -->
-        <div id="validation-summary"><p class="hint">Validation results load with the data.</p></div>
+          <h3>How well it works</h3>
+          <!-- Filled from data/manifest.json ("validation" and "stats"), so it stays correct after each yearly data update. -->
+          <div data-validation><p class="hint">Validation results load with the data.</p></div>
 
-        <h3>Reading the colours</h3>
-        <p>
-          Warm colours always mean artificial light: on the darkness and light-trend layers and the light-dome compass, brighter and warmer
-          means more light pollution. Cool blue-to-mint always means clear-sky odds, brighter meaning better. Every scale gets lighter as
-          its value rises, so it still reads in greyscale and for colour-blind viewers (Crameri et al., <i>Nature Communications</i>, 2020).
-          The interface stays dim and warm because night vision is most sensitive to blue-green light. Red light mode goes further for use
-          in the field.
-        </p>
+          <h3>Reading the colours</h3>
+          <p>
+            Warm colours always mean artificial light: on the darkness and light-trend layers and the light-dome compass, brighter and
+            warmer means more light pollution. Cool blue-to-mint always means clear-sky odds, brighter meaning better. Every scale gets
+            lighter as its value rises, so it still reads in greyscale and for colour-blind viewers (Crameri et al.,
+            <i>Nature Communications</i>, 2020). The interface stays dim and warm because night vision is most sensitive to blue-green
+            light. Red light mode goes further for use in the field.
+          </p>
 
-        <h3>Limitations</h3>
-        <ul>
-          <li>
-            <b>Not a forecast.</b> The odds know nothing about this particular season (El Niño, a late rainy season). Within a week of your
-            trip, use a live forecast.
-          </li>
-          <li>
-            <b><span data-bind="yearsCount">10</span> years is short.</b> Rare patterns may be missing, and a changing climate could shift
-            cloudiness later.
-          </li>
-          <li>
-            <b>Clouds.</b> ERA5 reanalysis gives one value per ~28 km cell per hour. Valley fog, sea fog, mountain-top cloud and fast-moving
-            cumulus are smoothed out. Thin high cloud counts as cloud. The 25% threshold is fixed. "Passing clouds OK" mode was not
-            separately validated.
-          </li>
-          <li>
-            <b>Darkness.</b> Calibrated to one published ground reading (Yonago, 18.8 mag/arcsec²). Terrain shielding, altitude and natural
-            airglow are ignored, and Bortle is really a visual scale, so labels may be off by one class. The satellite under-sees white
-            LEDs, so darkness may be overstated near LED-lit towns and the light-trend layer understates brightening.
-          </li>
-          <li><b>Light domes.</b> Direction and strength come from the same distance model, without hills that may hide a town.</li>
-          <li><b>Moon.</b> The 25%-lit cut-off is a simplification. A low crescent and a high quarter moon are treated alike.</li>
-          <li><b>Months view.</b> Uses mid-month darkness hours for the whole month and ignores the moon.</li>
-          <li>
-            <b>Places.</b> The darkest spot is a satellite pixel, not a surveyed or accessible site. Distances are straight lines; islands
-            need ferries or flights. English place names are auto-romanised (Japanese names are authoritative) and spot markers are
-            approximate.
-          </li>
-        </ul>
+          <h3>Limitations</h3>
+          <ul>
+            <li>
+              <b>Not a forecast.</b> The odds know nothing about this particular season (El Niño, a late rainy season). Within a week of
+              your trip, use a live forecast.
+            </li>
+            <li>
+              <b><span data-bind="yearsCount">10</span> years is short.</b> Rare patterns may be missing, and a changing climate could shift
+              cloudiness later.
+            </li>
+            <li>
+              <b>Clouds.</b> ERA5 reanalysis gives one value per ~28 km cell per hour. Valley fog, sea fog, mountain-top cloud and
+              fast-moving cumulus are smoothed out. Thin high cloud counts as cloud. The 25% threshold is fixed. "Passing clouds OK" mode
+              was not separately validated.
+            </li>
+            <li>
+              <b>Darkness.</b> Calibrated to one published ground reading (Yonago, 18.8 mag/arcsec²). Terrain shielding, altitude and
+              natural airglow are ignored, and Bortle is really a visual scale, so labels may be off by one class. The satellite under-sees
+              white LEDs, so darkness may be overstated near LED-lit towns and the light-trend layer understates brightening.
+            </li>
+            <li><b>Light domes.</b> Direction and strength come from the same distance model, without hills that may hide a town.</li>
+            <li><b>Moon.</b> The 25%-lit cut-off is a simplification. A low crescent and a high quarter moon are treated alike.</li>
+            <li><b>Months view.</b> Uses mid-month darkness hours for the whole month and ignores the moon.</li>
+            <li>
+              <b>Places.</b> The darkest spot is a satellite pixel, not a surveyed or accessible site. Distances are straight lines; islands
+              need ferries or flights. English place names are auto-romanised (Japanese names are authoritative) and spot markers are
+              approximate.
+            </li>
+          </ul>
 
-        <h3>Data</h3>
-        <ul>
-          <li>Cloud: ECMWF ERA5 hourly total cloud cover, <span data-bind="period">2015–2024</span>, via Google Earth Engine.</li>
-          <li>Night lights: VIIRS Day/Night Band annual composites v2.1/v2.2, Earth Observation Group, Colorado School of Mines.</li>
-          <li>Boundaries: MLIT 国土数値情報, simplified by SmartNews Media Research Institute.</li>
-          <li>Sun and moon: SunCalc. Map: Leaflet.</li>
-          <li>
-            Live cloud forecast (trips within a week): Japan Meteorological Agency models via
-            <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a> (CC BY 4.0).
-          </li>
-          <li>
-            Place names for the pin: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>
-            contributors (Nominatim, Photon by Komoot) and GSI reverse geocoder and address search (国土地理院).
-          </li>
-        </ul>
-        <p class="hint">
-          A Waseda Business School project. Odds are historical; for trips within a week they also blend in the live forecast. Check the
-          forecast again before you drive.
-        </p>
+          <h3>Data</h3>
+          <ul>
+            <li>Cloud: ECMWF ERA5 hourly total cloud cover, <span data-bind="period">2015–2024</span>, via Google Earth Engine.</li>
+            <li>Night lights: VIIRS Day/Night Band annual composites v2.1/v2.2, Earth Observation Group, Colorado School of Mines.</li>
+            <li>Boundaries: MLIT 国土数値情報, simplified by SmartNews Media Research Institute.</li>
+            <li>Sun and moon: SunCalc. Map: Leaflet.</li>
+            <li>
+              Live cloud forecast (trips within a week): Japan Meteorological Agency models via
+              <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a> (CC BY 4.0).
+            </li>
+            <li>
+              Place names for the pin: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>
+              contributors (Nominatim, Photon by Komoot) and GSI reverse geocoder and address search (国土地理院).
+            </li>
+          </ul>
+          <p class="hint">
+            A Waseda Business School project. Odds are historical; for trips within a week they also blend in the live forecast. Check the
+            forecast again before you drive.
+          </p>
+        </div>
+        <div data-lang="ja">
+          <h2>星待ちの仕組み</h2>
+          <p class="jp" style="margin-top: 0">Hoshimachi: 星を待つ</p>
+          <p>
+            光害マップは空がどこで暗いかを、天気予報は数日先の空模様を教えてくれます。でも、数週間前の時点で「この旅行で星空の夜に当たる確率」はどちらにもわかりません。星待ちは、過去<span
+              data-bind="yearsCount"
+              >10</span
+            >年分の実際の天気を、あなたの日程の暗さと月の条件にそのまま当てはめて、その確率を見積もります。
+          </p>
+
+          <h3>好条件の夜とは</h3>
+          <ol>
+            <li>
+              <b>暗い場所。</b>地域で最も暗い約1 kmの地点が、設定したボートル以下であること。空の明るさは VIIRS 衛星の夜間光を150
+              kmの範囲に広げ（ウォーカーの法則：光 ∝ 距離<sup>−2.5</sup>）、天頂の等級/平方秒角とボートル階級に換算したモデル値です。
+            </li>
+            <li>
+              <b>暗く、月のない時間。</b
+              >太陽が地平線下18°以上、かつ月が沈んでいるか輝面比25%未満であること。天の川モードでは銀河中心が10°以上の高さにあることも条件です。日程と地域の最暗地点に合わせて正確に計算しています。
+            </li>
+            <li>
+              <b>晴れ。</b>その時間帯のうち、全雲量25%未満の時間が設定した時間数以上あること（連続、または「途切れてもOK」なら合計）。
+            </li>
+          </ol>
+
+          <h3>確率の求め方</h3>
+          <ul>
+            <li>
+              <b>予報ではなく基準となる確率。</b
+              >過去のある年に晴れたからといって、今年も晴れるわけではありません。毎年くり返すのは季節の傾向です（梅雨、日本海側の冬の季節風、太平洋側の晴れた冬）。そこで、すべての年について日程の前後±<span
+                data-bind="windowDays"
+                >30</span
+              >日をまとめ（最大<span data-bind="maxTrips">610</span
+              >回分の過去の旅行）、少なくとも1夜うまくいった割合を数えます。実際の天気の並びをそのまま使うので、悪天候が数日続く傾向も反映されます。
+            </li>
+            <li>
+              <b>平滑化。</b>各地域は、周囲の約28 kmのセルの平均と<span data-bind="blendRatio">75/25</span
+              >で混ぜています。サンプルが少ないと極端な値が出やすいため、これで抑えます。検証でも確率の当たり具合が改善しました。
+            </li>
+            <li>
+              <b>不確かさ。</b
+              >表示する範囲は、年ごとのばらつきから求めた95%区間です（通常±10ポイント程度）。同じ年の近い日どうしは天気が似るため、過去の旅行は独立なサンプルではありません。範囲が1位と重なる地域は、実質的に同点です。
+            </li>
+            <li>
+              <b>答えを見ない。</b>日程が<span data-bind="period">2015–2024</span
+              >年の範囲内なら、その年は確率から除き、実際どうだったかを別に表示します。
+            </li>
+          </ul>
+
+          <h3>どのくらい当たるか</h3>
+          <div data-validation><p class="hint">検証結果はデータと一緒に読み込まれます。</p></div>
+
+          <h3>色の見方</h3>
+          <p>
+            暖色は常に人工の光を表します。暗さ・光害の変化のレイヤーと光のドームの図では、明るく暖かい色ほど光害が強いことを示します。青から緑の寒色は常に晴れる確率で、明るいほど良い値です。どの色の目盛りも値が大きいほど明るくなるので、白黒や色覚の違いがあっても読み取れます（Crameri
+            ほか、<i>Nature Communications</i
+            >、2020年）。夜の目は青緑の光に最も敏感なため、画面は暗く暖かい色にしています。現地では赤色ライトモードがさらに目に優しくなります。
+          </p>
+
+          <h3>限界</h3>
+          <ul>
+            <li>
+              <b>予報ではありません。</b
+              >今年特有の天候（エルニーニョ、梅雨明けの遅れなど）は考慮していません。旅行の1週間前からは最新の予報を使ってください。
+            </li>
+            <li>
+              <b><span data-bind="yearsCount">10</span>年は短い期間です。</b
+              >まれなパターンが含まれていない可能性があり、気候の変化で今後の雲の出方が変わることもありえます。
+            </li>
+            <li>
+              <b>雲。</b>ERA5 再解析は約28
+              kmのセルごとに1時間1つの値です。谷の霧、海霧、山頂の雲、動きの速い積雲はならされます。薄い高層雲も雲として数えます。25%の基準は固定です。「途切れてもOK」モードは別途検証していません。
+            </li>
+            <li>
+              <b>暗さ。</b>公表されている地上観測1地点（米子、18.8
+              等級/平方秒角）で較正しています。地形による遮蔽、標高、大気光は考慮しておらず、ボートルは本来目で見る尺度なので、1階級ずれることがあります。衛星は白色LEDを捉えにくいため、LED照明の町の近くでは暗さを過大に、光害の変化レイヤーでは明るくなる傾向を過小に示します。
+            </li>
+            <li><b>光のドーム。</b>方角と強さは同じ距離モデルによるもので、町を隠す山は考慮していません。</li>
+            <li><b>月。</b>輝面比25%の区切りは単純化です。低い三日月と高い半月を同じに扱っています。</li>
+            <li><b>月別表示。</b>その月全体に月半ばの暗い時間を使い、月は考慮していません。</li>
+            <li>
+              <b>場所。</b
+              >最暗地点は衛星の画素であり、測量された場所や立ち入れる場所ではありません。距離は直線距離で、島へはフェリーか飛行機が必要です。英語の地名は自動ローマ字化（日本語名が正式）で、スポットの位置はおおよそです。
+            </li>
+          </ul>
+
+          <h3>データ</h3>
+          <ul>
+            <li>雲：ECMWF ERA5 の1時間ごとの全雲量、<span data-bind="period">2015–2024</span>年、Google Earth Engine 経由。</li>
+            <li>夜間光：VIIRS 昼夜バンド年間合成 v2.1/v2.2、Earth Observation Group、コロラド鉱山大学。</li>
+            <li>境界：国土交通省 国土数値情報（スマートニュース メディア研究所による簡略版）。</li>
+            <li>太陽と月：SunCalc。地図：Leaflet。</li>
+            <li>
+              最新の雲の予報（1週間以内の旅行）：気象庁のモデル、<a href="https://open-meteo.com/" target="_blank" rel="noopener"
+                >Open-Meteo</a
+              >
+              経由（CC BY 4.0）。
+            </li>
+            <li>
+              ピンの地名：©
+              <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>
+              の貢献者（Nominatim、Komoot の Photon）、国土地理院の逆ジオコーダーと住所検索。
+            </li>
+          </ul>
+          <p class="hint">
+            早稲田大学ビジネススクールのプロジェクト。確率は過去のデータによるもので、1週間以内の旅行では最新の予報も反映できます。出発前に必ずもう一度予報を確認してください。
+          </p>
+        </div>
       </div>
     </dialog>
   </body>

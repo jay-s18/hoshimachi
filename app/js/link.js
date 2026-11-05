@@ -8,6 +8,7 @@
 import { ORIGINS } from "./config.js";
 import { CELLS } from "./data.js";
 import { state } from "./state.js";
+import { lang } from "./i18n.js";
 
 const ISO = /^\d{4}-\d{2}-\d{2}$/;
 const MAX_NIGHTS = 14;
@@ -76,6 +77,7 @@ export function writeLink() {
     parts.push(`cell=${c.r}_${c.c}`);
     if (state.pin) parts.push(`pin=${state.pin[0].toFixed(4)},${state.pin[1].toFixed(4)}`);
   }
+  if (lang === "ja") parts.push("lang=ja"); // a shared Japanese view opens in Japanese
   const url = `${location.pathname}?${parts.join("&")}${location.hash}`;
   if (url !== location.pathname + location.search + location.hash) history.replaceState(null, "", url);
 }

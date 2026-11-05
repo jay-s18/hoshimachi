@@ -2,6 +2,7 @@
  * The control panel (trip, sky and map settings), the moon strip, and the "i" tooltips.
  */
 import { ORIGINS } from "./config.js";
+import { applyStatic, isJa, onLang, setLang, t } from "./i18n.js";
 import { state, ymd } from "./state.js";
 import { addDays, fmtDate, isoAdd } from "./util.js";
 import { POP, moonIcon, moonInfo, moonName, windowMask } from "./astro.js";
@@ -33,7 +34,8 @@ function nightsText() {
   const d = ymd(),
     ns = Array.from({ length: state.nights }, (_, j) => fmtDate(addDays(d, j)));
   document.getElementById("nightsOut").textContent =
-    `${state.nights} night${state.nights > 1 ? "s" : ""}: ` + (ns.length <= 3 ? ns.join(", ") : `${ns[0]} to ${ns[ns.length - 1]}`);
+    t(state.nights > 1 ? "{n} nights: " : "{n} night: ", { n: state.nights }) +
+    (ns.length <= 3 ? ns.join(t(", ")) : t("{a} to {b}", { a: ns[0], b: ns[ns.length - 1] }));
 }
 
 /** One chip per night: moon phase and how many dark hours the moon costs. */
@@ -46,7 +48,7 @@ export function moonLine() {
     const dark = POP[windowMask(MOON_REF[0], MOON_REF[1], dj[0], dj[1], dj[2], { moon: false, mw: false })];
     const free = POP[windowMask(MOON_REF[0], MOON_REF[1], dj[0], dj[1], dj[2], { moon: true, mw: false })];
     const lost = dark - free;
-    return `<span class="moonchip${lost > 0 ? " bad" : ""}" title="${moonName(m.f, m.waxing)}, ${Math.round(m.f * 100)}% lit">${moonIcon(m.f, m.waxing, 18)}<span class="k"><span>${fmtDate(dj)}</span><span class="num hint">${Math.round(m.f * 100)}% lit</span><span class="hint">${lost > 0 ? `moon costs ${lost} h` : "no moon cost"}</span></span></span>`;
+    return `<span class="moonchip${lost > 0 ? " bad" : ""}" title="${moonName(m.f, m.waxing)}, ${t("{p}% lit", { p: Math.round(m.f * 100) })}">${moonIcon(m.f, m.waxing, 18)}<span class="k"><span>${fmtDate(dj)}</span><span class="num hint">${t("{p}% lit", { p: Math.round(m.f * 100) })}</span><span class="hint">${lost > 0 ? t("moon costs {h} h", { h: lost }) : t("no moon cost")}</span></span></span>`;
   }).join("");
 }
 
@@ -87,7 +89,8 @@ export function initControls() {
   const o = document.getElementById("origin"),
     di = document.getElementById("dist"),
     dout = document.getElementById("distOut");
-  o.innerHTML = ORIGINS.map((x) => `<option value="${x[0]}">${x[1]}</option>`).join("");
+  const originOptions = () => (o.innerHTML = ORIGINS.map((x) => `<option value="${x[0]}">${isJa() ? x[3] : x[1]}</option>`).join(""));
+  originOptions();
   // Controls start from state, which a shared link may have set.
   o.value = state.origin;
   di.value = state.dist;
@@ -117,7 +120,7 @@ export function initControls() {
 
   const hr = document.getElementById("hours"),
     hout = document.getElementById("hoursOut");
-  const hoursText = () => (hout.textContent = state.hours + (state.hours === 1 ? " hour" : " hours"));
+  const hoursText = () => (hout.textContent = t(state.hours === 1 ? "{n} hour" : "{n} hours", { n: state.hours }));
   hr.value = state.hours;
   hoursText();
   hr.oninput = () => {
@@ -143,11 +146,11 @@ export function initControls() {
   sb.onclick = async () => {
     try {
       await navigator.clipboard.writeText(location.href);
-      sb.textContent = "Link copied";
+      sb.textContent = t("Link copied");
     } catch {
-      sb.textContent = "Copy the address bar";
+      sb.textContent = t("Copy the address bar");
     }
-    setTimeout(() => (sb.textContent = "Share"), 2000);
+    setTimeout(() => (sb.textContent = t("Share")), 2000);
   };
   const ab = document.getElementById("about");
   document.getElementById("aboutBtn").onclick = () => ab.showModal();
@@ -159,6 +162,24 @@ export function initControls() {
     rb.setAttribute("aria-pressed", on);
   };
   initTooltips();
+
+  // Language: the button names the other language. Switching redraws the control texts here; app.js redraws the rest.
+  const lb = document.getElementById("langBtn");
+  const langUI = () => {
+    lb.textContent = isJa() ? "English" : "日本語";
+    lb.lang = isJa() ? "en" : "ja";
+  };
+  lb.onclick = () => setLang(isJa() ? "en" : "ja");
+  applyStatic();
+  langUI();
+  onLang(() => {
+    const v = o.value;
+    originOptions();
+    o.value = v;
+    hoursText();
+    nightsText();
+    langUI();
+  });
 }
 
 /* ---------- "i" buttons: tap/click to pin, hover to preview (mouse only), Esc or outside click to close ---------- */

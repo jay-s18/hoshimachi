@@ -5,6 +5,7 @@
  * Hour mask convention, shared with the pipeline: bit k is the hour starting at
  * (firstHourLocal + k), i.e. 18:00, 19:00, ... 05:00 JST for k = 0..11.
  */
+import { t } from "./i18n.js";
 import { BORTLE_EDGES, SKY } from "./config.js";
 import { state } from "./state.js";
 import { R2D } from "./util.js";
@@ -62,7 +63,7 @@ export function windowMask(lat, lon, y, m, d, opt) {
 
 /** "19:00–06:00" style label for a mask. */
 export function hoursLabel(w) {
-  if (!w) return "none";
+  if (!w) return t("none");
   const hs = [];
   for (let h = 0; h < HOURS; h++) if ((w >> h) & 1) hs.push(h);
   const f = (h) => String((18 + h) % 24).padStart(2, "0") + ":00";
@@ -113,10 +114,10 @@ export function moonInfo(dt) {
 }
 
 export function moonName(f, waxing) {
-  if (f < 0.03) return "New moon";
-  if (f > 0.97) return "Full moon";
-  if (f < 0.5) return waxing ? "Waxing crescent" : "Waning crescent";
-  return waxing ? "Waxing gibbous" : "Waning gibbous";
+  if (f < 0.03) return t("New moon");
+  if (f > 0.97) return t("Full moon");
+  if (f < 0.5) return t(waxing ? "Waxing crescent" : "Waning crescent");
+  return t(waxing ? "Waxing gibbous" : "Waning gibbous");
 }
 
 /** Moon phase icon as inline SVG: lit part warm white, dark part graphite (northern-hemisphere view). */

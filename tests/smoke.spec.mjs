@@ -31,7 +31,7 @@ test("loads, ranks regions and opens a card", async ({ page }) => {
   const manifest = await (await page.request.get("/data/manifest.json")).json();
   const years = manifest.period.years;
   await expect(page.locator('[data-bind="period"]').first()).toHaveText(`${years[0]}–${years.at(-1)}`);
-  await expect(page.locator("#validation-summary table tr")).toHaveCount(1 + manifest.validation.results.length);
+  await expect(page.locator('[data-lang="en"] [data-validation] table tr')).toHaveCount(1 + manifest.validation.results.length);
 
   await rows.first().click();
   await expect(page.locator("#res .card h3")).toBeVisible();
