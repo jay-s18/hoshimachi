@@ -74,6 +74,58 @@ test("a shared link restores dates, settings and the pinned spot", async ({ page
   expect(errors).toEqual([]);
 });
 
+// Same rule as replay_predict in pipeline/.../validation/estimator.py: a past trip counts only if it starts AND ends
+// outside the excluded years, even when a ±window or a multi-night trip crosses New Year. Synthetic weather makes
+// any leak visible: every night in the excluded year is perfect and every other night is cloudy, so odds must be 0.
+test("no peeking: nothing from an excluded year reaches the odds", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.locator("#res li[data-i]").first()).toBeVisible();
+  const result = await page.evaluate(`(async () => {
+    const O = await import("/js/odds.js");
+    const D = await import("/js/data.js");
+    const idx = (y, m, d) => O.histIndex(y, m, d);
+    const fill = (from, to, v) => { for (let i = from; i <= to; i++) D.MASKS[i * D.NC] = v; };
+    const opt = { moon: false, mw: false };
+    const trip = (ymd, k) => O.tripRaw(0, ymd, k, opt, O.excludedYears(ymd, k));
+    const out = {};
+
+    // Only 2020 is clear. Reached before the fix by the 2019 windows (+30 days) and by multi-night tails.
+    fill(0, D.NN - 1, 0);
+    fill(idx(2020, 1, 1), idx(2020, 12, 31), 4095);
+    out.lateDec = trip([2020, 12, 20], 1).raw;
+    out.lateDecTail = trip([2020, 12, 20], 3).raw;
+    out.earlyJan = trip([2020, 1, 5], 1).raw; // reached from the 2021 windows (-30 days)
+
+    // The opposite weather: only 2020 is cloudy, so every remaining sample is good and none was dropped wrongly.
+    fill(0, D.NN - 1, 4095);
+    fill(idx(2020, 1, 1), idx(2020, 12, 31), 0);
+    const clear = trip([2020, 12, 20], 1);
+    out.clearRaw = clear.raw;
+    out.clearN = clear.n;
+
+    // A trip crossing New Year excludes both years, reports the real dates, and past boxes can't touch them.
+    fill(0, D.NN - 1, 0);
+    fill(idx(2020, 12, 31), idx(2021, 1, 1), 4095); // the trip itself: both nights good
+    const cross = trip([2020, 12, 31], 2);
+    out.crossExcl = [...O.excludedYears([2020, 12, 31], 2)];
+    out.crossActual = cross.actual;
+    out.crossRaw = cross.raw;
+    out.luck2019 = cross.luck[D.YEARS.indexOf(2019)]; // Dec 31 2019 + Jan 1 2020 touches excluded 2020
+    out.luck2018 = cross.luck[D.YEARS.indexOf(2018)];
+    return out;
+  })()`);
+  expect(result.lateDec).toBe(0);
+  expect(result.lateDecTail).toBe(0);
+  expect(result.earlyJan).toBe(0);
+  expect(result.clearRaw).toBe(1);
+  expect(result.clearN).toBeGreaterThan(0);
+  expect(result.crossExcl).toEqual([2020, 2021]);
+  expect(result.crossActual).toEqual({ year: 2020, nights: 2 });
+  expect(result.crossRaw).toBe(0);
+  expect(result.luck2019).toBeNull();
+  expect(result.luck2018).toBe(false);
+});
+
 test("single-file build runs from disk", async ({ page }) => {
   const file = new URL("../dist/hoshimachi.html", import.meta.url);
   test.skip(!existsSync(file), "run `npm run build:single` first");

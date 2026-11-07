@@ -4,6 +4,8 @@
 
 The odds come from replaying every year of hourly ERA5 cloud data on record (2015 onward) against the exact dark, moon-free hours of your trip. They were checked out of sample on 2.2 million predictions (see `docs/ARCHITECTURE.md` › Validation).
 
+Every feature is listed in [`docs/FEATURES.md`](docs/FEATURES.md), with a table for comparing competitors.
+
 ```
 hoshimachi/
 ├── app/                  the website: static HTML, CSS and ES modules, no build step
@@ -19,7 +21,7 @@ hoshimachi/
 │   └── tests/
 ├── tools/                dev server and the single-file (offline) builder
 ├── tests/                browser smoke tests (Playwright)
-├── docs/                 architecture, data format, yearly update, deployment
+├── docs/                 features, architecture, data format, yearly update, deployment
 └── .github/workflows/    CI, yearly data update, optional GitHub Pages deploy
 ```
 

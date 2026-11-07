@@ -41,6 +41,10 @@ export function tripRaw(ci, ymd, k, opt, excl) {
     dates.push(dj);
     wins.push(windowMask(lat, lon, dj[0], dj[1], dj[2], opt));
   }
+  // Night-index range of each excluded year. A past trip touching one is skipped, even if it starts in another year
+  // (a ±window or a multi-night trip can cross New Year). Same rule as replay_predict in validation/estimator.py.
+  const exclRanges = [...excl].map((y) => [histIndex(y, 1, 1), histIndex(y, 12, 31)]);
+  const touchesExcl = (i0) => exclRanges.some(([a, b]) => i0 <= b && i0 + k - 1 >= a);
   const pY = [],
     luck = [],
     nightHits = new Array(k).fill(0);
@@ -58,15 +62,16 @@ export function tripRaw(ci, ymd, k, opt, excl) {
     if (excl.has(Y)) {
       pY.push(null);
       luck.push(null);
-      if (same !== null) actual = { year: Y, nights: same };
+      // Only the start year holds the trip's own dates; for a New Year trip, the end year's row is the next winter.
+      if (Y === ymd[0] && same !== null) actual = { year: Y, nights: same };
       continue;
     }
-    luck.push(same === null ? null : same > 0);
+    luck.push(same === null || touchesExcl(base) ? null : same > 0);
     let ny = 0,
       hy = 0;
     for (let s = -WIN; s <= WIN; s++) {
       const i0 = base + s;
-      if (i0 < 0 || i0 + k - 1 >= NN) continue;
+      if (i0 < 0 || i0 + k - 1 >= NN || touchesExcl(i0)) continue;
       let any = false;
       for (let j = 0; j < k; j++)
         if (good(MASKS[(i0 + j) * NC + ci], wins[j])) {
